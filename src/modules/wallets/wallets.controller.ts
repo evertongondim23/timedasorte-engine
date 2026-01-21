@@ -17,6 +17,7 @@ import { DepositDto } from './dto/deposit.dto';
 import { WithdrawDto } from './dto/withdraw.dto';
 import { AuthGuard } from '../../shared/auth/guards/auth.guard';
 import { CurrentUser } from '../../shared/auth/decorators/current-user.decorator';
+import { UserPayload } from '../../shared/auth/interfaces/user-payload.interface';
 import { Roles } from '@prisma/client';
 import { RequiredRoles } from '../../shared/auth/required-roles.decorator';
 
@@ -45,18 +46,19 @@ export class WalletsController {
 
   /**
    * Consultar minha carteira
+   * Cria automaticamente se não existir
    */
   @Get('me')
-  findMine(@CurrentUser() user: any) {
-    return this.walletsService.findByUserId(user.sub);
+  async findMine(@CurrentUser() user: UserPayload) {
+    return this.walletsService.findOrCreateByUserId(user.id);
   }
 
   /**
    * Consultar meu saldo
    */
   @Get('me/balance')
-  getMyBalance(@CurrentUser() user: any) {
-    return this.walletsService.getBalance(user.sub);
+  async getMyBalance(@CurrentUser() user: UserPayload) {
+    return this.walletsService.getBalance(user.id);
   }
 
   /**
@@ -67,7 +69,7 @@ export class WalletsController {
   findOne(@Param('id') id: string) {
     return this.walletsService.findOne(id);
   }
-
+ //  [TODO] - Remover apos teste em desenvolvimento
   /**
    * Atualizar carteira (admin)
    */
@@ -78,28 +80,30 @@ export class WalletsController {
   }
 
   /**
-   * Deletar carteira (admin)
-   */
-  @Delete(':id')
-  @RequiredRoles(Roles.ADMIN, Roles.SYSTEM_ADMIN)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string) {
-    return this.walletsService.remove(id);
-  }
-
-  /**
    * Depositar na minha carteira
    */
   @Post('me/deposit')
-  deposit(@CurrentUser() user: any, @Body() depositDto: DepositDto) {
-    return this.walletsService.deposit(user.sub, depositDto);
+  @HttpCode(HttpStatus.OK)
+  async deposit(@CurrentUser() user: UserPayload, @Body() depositDto: DepositDto) {
+    return this.walletsService.deposit(user.id, depositDto);
   }
 
   /**
    * Sacar da minha carteira
    */
   @Post('me/withdraw')
-  withdraw(@CurrentUser() user: any, @Body() withdrawDto: WithdrawDto) {
-    return this.walletsService.withdraw(user.sub, withdrawDto);
+  @HttpCode(HttpStatus.OK)
+  async withdraw(@CurrentUser() user: UserPayload, @Body() withdrawDto: WithdrawDto) {
+    return this.walletsService.withdraw(user.id, withdrawDto);
+  }
+
+  /**
+   * Deletar carteira (admin) - soft delete
+   */
+  @Delete(':id')
+  @RequiredRoles(Roles.ADMIN, Roles.SYSTEM_ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@Param('id') id: string) {
+    return this.walletsService.remove(id);
   }
 }

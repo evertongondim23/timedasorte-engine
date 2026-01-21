@@ -140,6 +140,64 @@ export class WalletsService {
   }
 
   /**
+   * Busca ou cria carteira por userId
+   * Útil para garantir que o usuário sempre tenha uma carteira
+   */
+  async findOrCreateByUserId(userId: string) {
+    // Tenta encontrar a carteira existente
+    let wallet = await this.prisma.wallet.findUnique({
+      where: { userId, deletedAt: null },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    // Se não encontrou, cria uma nova
+    if (!wallet) {
+      // Verificar se o usuário existe
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        throw new NotFoundException(`Usuário com ID ${userId} não encontrado`);
+      }
+
+      // Criar carteira com saldo inicial zero
+      wallet = await this.prisma.wallet.create({
+        data: {
+          userId: userId,
+          balance: 0,
+          blockedBalance: 0,
+          totalDeposited: 0,
+          totalWithdrawn: 0,
+          totalWon: 0,
+          totalLost: 0,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              status: true,
+            },
+          },
+        },
+      });
+    }
+
+    return wallet;
+  }
+
+  /**
    * Atualiza uma carteira
    */
   async update(id: string, updateWalletDto: UpdateWalletDto) {
