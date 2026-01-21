@@ -1,0 +1,61 @@
+services:
+  # Database PostgreSQL
+  db:
+    image: postgres:16.8-alpine3.20
+    container_name: jogodasorte-db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+    ports:
+      - '5432:5432'
+    volumes:
+      - jogodasorte-engine-lobocode_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.2'
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: jogodasorte-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.2'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    restart: unless-stopped
+    networks:
+      - app-net
+
+volumes:
+  jogodasorte-engine-lobocode_postgres_data:
+    external: true
+  redis_data:
+
+networks:
+  app-net:
+    external: true

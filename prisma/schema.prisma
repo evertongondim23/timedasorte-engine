@@ -1,0 +1,506 @@
+// ===============================================
+// 🎲 PRISMA SCHEMA - JOGO DA SORTE ENGINE
+// ===============================================
+// Schema para sistema de apostas e sorteios
+// Baseado em: Jogo do Bicho com Times de Futebol
+// ===============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===============================================
+// 🎯 ENUMS CENTRALIZADOS
+// ===============================================
+
+// ===============================================
+// 👥 USUÁRIOS
+// ===============================================
+
+enum Roles {
+  USER         // Usuário comum (apostador)
+  ADMIN        // Administrador da plataforma
+  SYSTEM_ADMIN // Super administrador
+  OPERATOR     // Operador de sorteios
+}
+
+enum UserStatus {
+  ACTIVE    // Ativo
+  INACTIVE  // Inativo
+  SUSPENDED // Suspenso
+  BANNED    // Banido
+}
+
+enum KYCStatus {
+  PENDING    // Aguardando documentos
+  IN_REVIEW  // Em análise
+  APPROVED   // Aprovado
+  REJECTED   // Rejeitado
+}
+
+// ===============================================
+// 💰 TRANSAÇÕES FINANCEIRAS
+// ===============================================
+
+enum TransactionType {
+  DEPOSIT    // Depósito
+  WITHDRAWAL // Saque
+  BET        // Aposta
+  PRIZE      // Prêmio
+  FEE        // Taxa
+  REFUND     // Reembolso
+  BONUS      // Bônus
+}
+
+enum TransactionStatus {
+  PENDING    // Pendente
+  PROCESSING // Processando
+  COMPLETED  // Concluído
+  FAILED     // Falhou
+  CANCELLED  // Cancelado
+}
+
+enum PaymentMethod {
+  PIX         // PIX
+  CREDIT_CARD // Cartão de crédito
+  DEBIT_CARD  // Cartão de débito
+  BOLETO      // Boleto bancário
+  BALANCE     // Saldo interno
+}
+
+// ===============================================
+// 🎲 APOSTAS E SORTEIOS
+// ===============================================
+
+enum BetModality {
+  TIME    // Aposta em um time
+  CAMISA  // Aposta em número de camisa
+  DUPLA   // Aposta em dois times
+  TERNO   // Aposta em três camisas
+  PASSE   // Aposta em vários times
+  CENTENA // Últimos 2 números
+  MILHAR  // 4 números exatos
+}
+
+enum BetStatus {
+  PENDING   // Aguardando sorteio
+  WON       // Vencedora
+  LOST      // Perdedora
+  CANCELLED // Cancelada
+  EXPIRED   // Expirada
+}
+
+enum DrawStatus {
+  SCHEDULED   // Agendado
+  IN_PROGRESS // Em andamento
+  COMPLETED   // Concluído
+  CANCELLED   // Cancelado
+  FAILED      // Falhou
+}
+
+// ===============================================
+// 📁 ARQUIVOS
+// ===============================================
+
+enum FileType {
+  PROFILE_IMAGE      // Imagem de perfil
+  TEAM_LOGO          // Logo de time
+  DOCUMENT           // Documento (KYC)
+  PAYMENT_RECEIPT    // Comprovante de pagamento
+  DRAW_CERTIFICATE   // Certificado de sorteio
+  OTHER              // Outro
+}
+
+// ===============================================
+// 🏢 EMPRESAS (OPCIONAL - MULTI-TENANCY)
+// ===============================================
+
+model Company {
+  id           String  @id @default(cuid())
+  name         String
+  cnpj         String? @unique
+  website      String?
+  contactEmail String?
+  contactPhone String?
+
+  // Relacionamentos
+  users         User[]
+  notifications Notification[]
+
+  // Auditoria
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([cnpj])
+  @@index([deletedAt])
+}
+
+// ===============================================
+// 👥 USUÁRIOS
+// ===============================================
+
+model User {
+  id             String     @id @default(cuid())
+  name           String
+  email          String     @unique
+  password       String
+  role           Roles      @default(USER)
+  status         UserStatus @default(ACTIVE)
+  profilePicture String?
+  phone          String?
+  cpf            String?    @unique
+  birthDate      DateTime?
+  address        String?
+  city           String?
+  state          String?
+  zipCode        String?
+
+  // KYC (Know Your Customer)
+  kycStatus       KYCStatus? @default(PENDING)
+  kycSubmittedAt  DateTime?
+  kycApprovedAt   DateTime?
+  kycRejectedAt   DateTime?
+  kycRejectionReason String?
+
+  // Multi-tenancy (opcional)
+  company   Company? @relation(fields: [companyId], references: [id])
+  companyId String?
+
+  // Relacionamentos
+  wallet            Wallet?
+  bets              Bet[]
+  transactions      Transaction[]
+  notifications     NotificationRecipient[]
+  files             File[]                  @relation("UserFiles")
+  auditLogs         AuditLog[]
+
+  // Auditoria
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([email])
+  @@index([cpf])
+  @@index([status])
+  @@index([role])
+  @@index([kycStatus])
+  @@index([companyId])
+  @@index([deletedAt])
+}
+
+// ===============================================
+// 💰 CARTEIRAS
+// ===============================================
+
+model Wallet {
+  id             String @id @default(cuid())
+  balance        Float  @default(0) // Saldo disponível
+  blockedBalance Float  @default(0) // Saldo bloqueado (apostas pendentes)
+  totalDeposited Float  @default(0) // Total depositado (histórico)
+  totalWithdrawn Float  @default(0) // Total sacado (histórico)
+  totalWon       Float  @default(0) // Total ganho em prêmios
+  totalLost      Float  @default(0) // Total perdido em apostas
+
+  // Dono da carteira
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @unique
+
+  // Auditoria
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([userId])
+  @@index([deletedAt])
+}
+
+// ===============================================
+// 💳 TRANSAÇÕES FINANCEIRAS
+// ===============================================
+
+model Transaction {
+  id          String            @id @default(cuid())
+  type        TransactionType
+  amount      Float
+  status      TransactionStatus @default(PENDING)
+  method      PaymentMethod?
+  description String?
+  
+  // Dados de pagamento externo
+  externalId       String? // ID da transação no gateway
+  externalStatus   String? // Status no gateway
+  gatewayResponse  Json?   // Resposta completa do gateway
+  
+  // Comprovantes
+  receiptUrl String?
+  
+  // Dono da transação
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  // Relacionamentos
+  bet   Bet?    @relation(fields: [betId], references: [id])
+  betId String?
+
+  // Auditoria
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+  deletedAt   DateTime?
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([externalId])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+// ===============================================
+// 🏆 TIMES
+// ===============================================
+
+model Team {
+  id       Int     @id @default(autoincrement())
+  name     String  @unique
+  jerseys  Int[] // Array de números de camisa [1,2,3,4]
+  shield   String? // Emoji ou URL do escudo
+  color    String // Cor hexadecimal
+  animal   String // Nome do animal
+  animalEmoji String // Emoji do animal
+  isActive Boolean @default(true)
+
+  // Relacionamentos
+  bets BetTeam[]
+
+  // Auditoria
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([isActive])
+  @@index([deletedAt])
+}
+
+// ===============================================
+// 🎲 APOSTAS
+// ===============================================
+
+model Bet {
+  id       String      @id @default(cuid())
+  modality BetModality
+  amount   Float
+  status   BetStatus   @default(PENDING)
+  jerseys  Int[] // Números de camisa apostados
+  
+  // Resultado
+  prize         Float?
+  multiplier    Float?    @default(18) // Multiplicador de prêmio
+  isWinner      Boolean   @default(false)
+  winningReason String? // Explicação do resultado
+  
+  // Apostador
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  // Times apostados (relação N:N)
+  teams BetTeam[]
+
+  // Sorteio relacionado
+  draw   Draw?   @relation(fields: [drawId], references: [id])
+  drawId String?
+
+  // Transações relacionadas
+  transactions Transaction[]
+
+  // Auditoria
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  processedAt DateTime? // Quando foi processada
+  deletedAt   DateTime?
+
+  @@index([userId])
+  @@index([drawId])
+  @@index([status])
+  @@index([modality])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+// ===============================================
+// 🔗 RELAÇÃO N:N - APOSTAS E TIMES
+// ===============================================
+
+model BetTeam {
+  id     String @id @default(cuid())
+  bet    Bet    @relation(fields: [betId], references: [id], onDelete: Cascade)
+  betId  String
+  team   Team   @relation(fields: [teamId], references: [id])
+  teamId Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([betId, teamId])
+  @@index([betId])
+  @@index([teamId])
+}
+
+// ===============================================
+// 🎰 SORTEIOS
+// ===============================================
+
+model Draw {
+  id          String     @id @default(cuid())
+  scheduledAt DateTime // Data/hora agendada
+  executedAt  DateTime? // Data/hora de execução
+  status      DrawStatus @default(SCHEDULED)
+  
+  // Resultados do sorteio
+  milhares Int[] // 5 números de 4 dígitos [1234, 5678, ...]
+  jerseys  Int[] // 5 números de camisa [12, 35, 47, ...]
+  teams    Int[] // 5 IDs de times sorteados [3, 9, 12, ...]
+  
+  // Auditoria e segurança
+  seed               String? // Seed usado para RNG
+  certificateHash    String? // Hash do certificado (blockchain)
+  certificateUrl     String? // URL do certificado
+  totalBets          Int     @default(0)
+  totalPrizePool     Float   @default(0)
+  totalWinners       Int     @default(0)
+  totalPrizesPaid    Float   @default(0)
+  
+  // Operador responsável
+  operatorId String?
+  
+  // Relacionamentos
+  bets Bet[]
+
+  // Auditoria
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([scheduledAt])
+  @@index([status])
+  @@index([executedAt])
+  @@index([deletedAt])
+}
+
+// ===============================================
+// 📁 ARMAZENAMENTO DE ARQUIVOS
+// ===============================================
+
+model File {
+  id           String   @id @default(cuid())
+  originalName String
+  fileName     String   @unique
+  type         FileType
+  size         Int
+  mimeType     String
+  url          String   @unique
+  description  String?
+
+  // Usuário que fez upload
+  uploadedByUser User?   @relation("UserFiles", fields: [uploadedBy], references: [id])
+  uploadedBy     String?
+
+  // Auditoria
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([uploadedBy])
+  @@index([type])
+  @@index([fileName])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+// ===============================================
+// 🔔 SISTEMA DE NOTIFICAÇÕES
+// ===============================================
+
+model Notification {
+  id         String  @id @default(cuid())
+  title      String
+  message    String  @db.Text
+  entityType String? // 'bet', 'draw', 'transaction', 'withdrawal'
+  entityId   String? // ID da entidade relacionada
+
+  // Multi-tenancy (opcional)
+  company   Company? @relation(fields: [companyId], references: [id])
+  companyId String?
+
+  // Usuário que criou a ação (opcional)
+  createdByUserId String?
+
+  // Destinatários da notificação
+  recipients NotificationRecipient[]
+
+  // Auditoria
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([companyId])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model NotificationRecipient {
+  id     String    @id @default(cuid())
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
+  // Notificação
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  notificationId String
+
+  // Usuário destinatário
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  // Auditoria
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([notificationId, userId])
+  @@index([userId])
+  @@index([notificationId])
+  @@index([isRead])
+}
+
+// ===============================================
+// 📋 LOGS DE AUDITORIA
+// ===============================================
+
+model AuditLog {
+  id         String @id @default(cuid())
+  action     String // 'CREATE', 'UPDATE', 'DELETE', 'LOGIN', etc
+  entity     String // 'User', 'Bet', 'Draw', 'Transaction'
+  entityId   String?
+  changes    Json? // Mudanças realizadas
+  ip         String?
+  userAgent  String?
+  
+  // Usuário que realizou a ação
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
+
+  // Auditoria
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
+  @@index([entityId])
+  @@index([action])
+  @@index([createdAt])
+}

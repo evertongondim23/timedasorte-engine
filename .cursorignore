@@ -1,0 +1,16 @@
+# O Cursor pode acessar estes arquivos mesmo que estejam no .gitignore
+# Isso permite editar configurações sensíveis durante o desenvolvimento
+
+# Permitir acesso ao .env
+!.env
+!.env.local
+!.env.development
+!.env.test
+!.env.production
+
+# Mas ainda bloquear estes:
+node_modules/
+dist/
+build/
+.git/
+
