@@ -26,10 +26,7 @@ import {
     SystemAdminService,
     AdminService,
   ],
-  imports: [
-    CompaniesModule,
-    forwardRef(() => WalletsModule), // forwardRef para evitar dependência circular
-  ],
+  imports: [CompaniesModule],
   exports: [
     UsersService,
     UserRepository,
