@@ -1,4 +1,4 @@
-import { Global, Module } from "@nestjs/common";
+import { Global, Module, forwardRef } from "@nestjs/common";
 import { AuthController } from "./auth.controller";
 import {
   AuthService,
@@ -21,6 +21,7 @@ import { RefreshGuard } from "./guards/refresh.guard";
 import { RateLimitGuard } from "./guards/rate-limit.guard";
 import { AuthInterceptor } from "./interceptors/auth.interceptor";
 import { UsersModule } from "../../modules/users/users.module";
+import { WalletsModule } from "../../modules/wallets/wallets.module";
 
 @Global()
 @Module({
@@ -38,6 +39,7 @@ import { UsersModule } from "../../modules/users/users.module";
     }),
     PrismaModule,
     UsersModule,
+    forwardRef(() => WalletsModule), // forwardRef para evitar circular dependency
   ],
   controllers: [AuthController],
   providers: [

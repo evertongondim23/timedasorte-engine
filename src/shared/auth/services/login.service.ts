@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { CaslAbilityService } from '../../casl/casl-ability/casl-ability.service';
 import { packRules } from '@casl/ability/extra';
@@ -16,6 +16,7 @@ import { UserValidator } from '../../../modules/users/validators/user.validator'
 import { UserQueryService } from '../../../modules/users/services/user-query.service';
 import { UserPermissionService } from '../../../modules/users/services/user-permission.service';
 import { UserFactory } from '../../../modules/users/factories/user.factory';
+import { WalletsService } from '../../../modules/wallets/wallets.service';
 import { Roles } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
@@ -33,6 +34,8 @@ export class LoginService {
     private readonly userQueryService: UserQueryService,
     private readonly userPermissionService: UserPermissionService,
     private readonly userFactory: UserFactory,
+    @Inject(forwardRef(() => WalletsService))
+    private readonly walletsService: WalletsService,
   ) {}
 
   /**
@@ -137,6 +140,18 @@ export class LoginService {
 
       // Criar usuário no banco
       const user = await this.userRepository.criar(userData);
+
+      // 🎁 Criar carteira automaticamente para o novo usuário
+      try {
+        await this.walletsService.create({
+          userId: user.id,
+        });
+        console.log(`✅ Carteira criada automaticamente para usuário ${user.email}`);
+      } catch (error) {
+        console.error(`❌ Erro ao criar carteira para usuário ${user.email}:`, error.message);
+        // Não falhar o registro se a carteira falhar
+        // A carteira pode ser criada depois via findOrCreateByUserId
+      }
 
       // Log de sucesso do registro
       if (request) {
