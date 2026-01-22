@@ -55,6 +55,8 @@ import {
 // ===============================================
 // 🎲 MÓDULOS DO JOGO DA SORTE
 // ===============================================
+import { GameModule } from "./modules/game/game.module";
+import { RoundsModule } from "./modules/rounds/rounds.module";
 import { WalletsModule } from "./modules/wallets/wallets.module";
 import { TeamsModule } from "./modules/teams/teams.module";
 import { TransactionsModule } from "./modules/transactions/transactions.module";
@@ -100,12 +102,13 @@ import { TransactionsModule } from "./modules/transactions/transactions.module";
     // ===============================================
     // 🎲 MÓDULOS DO JOGO
     // ===============================================
+    GameModule,
+    RoundsModule,
     WalletsModule,
     TeamsModule,
     TransactionsModule,
     // TODO: Adicionar outros módulos quando criados:
     // BetsModule,
-    // DrawsModule,
     // PaymentGatewaysModule,
   ],
   controllers: [AppController],

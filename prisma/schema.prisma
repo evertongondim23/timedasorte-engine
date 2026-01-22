@@ -97,10 +97,18 @@ enum BetStatus {
 
 enum DrawStatus {
   SCHEDULED   // Agendado
+  OPEN        // Aberto para apostas
+  CLOSED      // Fechado para apostas (cutoff)
   IN_PROGRESS // Em andamento
   COMPLETED   // Concluído
   CANCELLED   // Cancelado
   FAILED      // Falhou
+}
+
+enum ResultSource {
+  ADMIN    // Resultado inserido por administrador
+  OFFICIAL // Resultado de fonte oficial/legal
+  SYSTEM   // Resultado gerado pelo sistema
 }
 
 // ===============================================
@@ -316,6 +324,9 @@ model Bet {
   draw   Draw?   @relation(fields: [drawId], references: [id])
   drawId String?
 
+  // Liquidação (settlement)
+  settlement Settlement?
+
   // Transações relacionadas
   transactions Transaction[]
 
@@ -356,14 +367,18 @@ model BetTeam {
 // ===============================================
 
 model Draw {
-  id          String     @id @default(cuid())
-  scheduledAt DateTime // Data/hora agendada
-  executedAt  DateTime? // Data/hora de execução
-  status      DrawStatus @default(SCHEDULED)
+  id          String       @id @default(cuid())
+  scheduledAt DateTime     // Data/hora agendada para publicação do resultado
+  cutoffAt    DateTime     // Data/hora limite para apostas (scheduledAt - 30min)
+  publishedAt DateTime?    // Data/hora de publicação do resultado
+  executedAt  DateTime?    // Data/hora de execução do sorteio
+  status      DrawStatus   @default(SCHEDULED)
+  source      ResultSource @default(ADMIN) // Fonte do resultado
+  externalRef String?      // Referência externa (ex: ID da loteria oficial)
   
   // Resultados do sorteio
   milhares Int[] // 5 números de 4 dígitos [1234, 5678, ...]
-  jerseys  Int[] // 5 números de camisa [12, 35, 47, ...]
+  jerseys  Int[] // 5 números de camisa (dezenas) [12, 35, 47, ...]
   teams    Int[] // 5 IDs de times sorteados [3, 9, 12, ...]
   
   // Auditoria e segurança
@@ -379,7 +394,8 @@ model Draw {
   operatorId String?
   
   // Relacionamentos
-  bets Bet[]
+  bets        Bet[]
+  settlements Settlement[]
 
   // Auditoria
   createdAt DateTime  @default(now())
@@ -387,9 +403,39 @@ model Draw {
   deletedAt DateTime?
 
   @@index([scheduledAt])
+  @@index([cutoffAt])
   @@index([status])
+  @@index([source])
   @@index([executedAt])
   @@index([deletedAt])
+}
+
+// ===============================================
+// 📊 LIQUIDAÇÕES E CÁLCULOS
+// ===============================================
+
+model Settlement {
+  id           String   @id @default(cuid())
+  betId        String   @unique
+  bet          Bet      @relation(fields: [betId], references: [id], onDelete: Cascade)
+  drawId       String
+  draw         Draw     @relation(fields: [drawId], references: [id])
+  
+  // Snapshot do resultado para auditoria
+  resultSnapshot Json    // { milhares, jerseys, teams, calculationDetails }
+  
+  // Dados de cálculo
+  isWinner       Boolean
+  matchedItems   String[] // Itens que bateram (times, dezenas, etc)
+  prizeAmount    Float    @default(0)
+  multiplier     Float    @default(0)
+  
+  // Auditoria
+  computedAt DateTime @default(now())
+  computedBy String?  // ID do sistema/operador que calculou
+  
+  @@index([drawId])
+  @@index([computedAt])
 }
 
 // ===============================================
