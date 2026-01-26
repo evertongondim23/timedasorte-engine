@@ -27,7 +27,10 @@ export class UserValidator {
     // Verifica se CPF já existe
     const user = await this.userRepository.buscarPrimeiro({ cpf });
     if (user && user.id !== excludeUserId) {
-      throw new ConflictError('CPF já está em uso');
+      console.log('❌ CPF já cadastrado para o usuário:', user.email, '(ID:', user.id, ')');
+      throw new ConflictError(
+        `CPF já está cadastrado. Se este é seu CPF, entre em contato com o suporte informando o código: ${user.id.substring(0, 8)}`
+      );
     }
   }
 
@@ -37,7 +40,10 @@ export class UserValidator {
     // Verifica se telefone já existe
     const user = await this.userRepository.buscarPrimeiro({ phone });
     if (user && user.id !== excludeUserId) {
-      throw new ConflictError('Telefone já está em uso');
+      console.log('❌ Telefone já cadastrado para o usuário:', user.email, '(ID:', user.id, ')');
+      throw new ConflictError(
+        `Telefone já está cadastrado. Se este é seu telefone, entre em contato com o suporte informando o código: ${user.id.substring(0, 8)}`
+      );
     }
   }
 

@@ -1,6 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
 import { GameConfigService } from './game-config.service';
-import { SuccessResponseDto } from '@/shared/dto/success-response.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /**
@@ -31,13 +30,8 @@ export class GameController {
     status: 200, 
     description: 'Configuração do jogo retornada com sucesso' 
   })
-  getConfig(): SuccessResponseDto<any> {
-    const config = this.gameConfigService.getGameConfig();
-    
-    return SuccessResponseDto.create({
-      data: config,
-      message: 'Configuração do jogo recuperada com sucesso',
-    });
+  getConfig() {
+    return this.gameConfigService.getGameConfig();
   }
 
   /**
@@ -54,13 +48,8 @@ export class GameController {
     status: 200, 
     description: 'Regras do jogo retornadas com sucesso' 
   })
-  getRules(): SuccessResponseDto<any> {
-    const rules = this.gameConfigService.getRules();
-    
-    return SuccessResponseDto.create({
-      data: rules,
-      message: 'Regras do jogo recuperadas com sucesso',
-    });
+  getRules() {
+    return this.gameConfigService.getRules();
   }
 
   /**
@@ -77,12 +66,7 @@ export class GameController {
     status: 200, 
     description: 'Multiplicadores retornados com sucesso' 
   })
-  getMultipliers(): SuccessResponseDto<any> {
-    const multipliers = this.gameConfigService.getPayoutMultipliers();
-    
-    return SuccessResponseDto.create({
-      data: multipliers,
-      message: 'Multiplicadores recuperados com sucesso',
-    });
+  getMultipliers() {
+    return this.gameConfigService.getPayoutMultipliers();
   }
 }

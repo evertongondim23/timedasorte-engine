@@ -89,10 +89,10 @@ jogo-da-sorte-engine/
 
 - Node.js 18+ 
 - PostgreSQL 14+
-- Docker (opcional, recomendado)
-- MinIO (para upload de arquivos)
+- Docker e Docker Compose (recomendado)
+- MinIO (para upload de arquivos - opcional)
 
-### 2. **Instalação**
+### 2. **Instalação - Modo Desenvolvimento**
 
 ```bash
 # Clone o repositório
@@ -115,7 +115,7 @@ npm run prisma:generate
 # Execute as migrations
 npm run prisma:migrate
 
-# (Opcional) Execute o seed para dados iniciais
+# Execute o seed para dados iniciais (times e admin)
 npm run prisma:seed
 ```
 
@@ -127,15 +127,34 @@ npm run start:dev
 
 A API estará disponível em `http://localhost:3000`
 
-### 5. **Executar com Docker**
+### 5. **Executar com Docker (Produção)**
 
 ```bash
-# Development
-npm run docker:dev
+# Criar arquivo .env com as variáveis necessárias
+cp .env.example .env
 
-# Production
-npm run docker:prod
+# Subir os containers
+docker-compose up -d
+
+# Verificar logs
+docker-compose logs -f api
+
+# Parar os containers
+docker-compose down
 ```
+
+A API estará disponível em `http://localhost:3000`
+
+### 6. **Credenciais Padrão**
+
+Após executar o seed, use estas credenciais para acessar:
+
+```
+Email: admin@jogodasorte.com
+Senha: Admin@123
+```
+
+⚠️ **IMPORTANTE**: Altere essas credenciais em produção!
 
 ---
 
@@ -144,92 +163,140 @@ npm run docker:prod
 ### Autenticação
 
 ```
-POST   /auth/login       # Login
-POST   /auth/register    # Registro
-POST   /auth/refresh     # Refresh token
-POST   /auth/logout      # Logout
+POST   /api/auth/login       # Login
+POST   /api/auth/register    # Registro
+POST   /api/auth/refresh     # Refresh token
+POST   /api/auth/logout      # Logout
 ```
 
 ### Usuários
 
 ```
-GET    /users            # Listar usuários
-GET    /users/:id        # Buscar usuário
-POST   /users            # Criar usuário
-PATCH  /users/:id        # Atualizar usuário
-DELETE /users/:id        # Deletar usuário (soft delete)
+GET    /api/users            # Listar usuários
+GET    /api/users/:id        # Buscar usuário
+POST   /api/users            # Criar usuário
+PATCH  /api/users/:id        # Atualizar usuário
+DELETE /api/users/:id        # Deletar usuário (soft delete)
 ```
 
-### Apostas (A IMPLEMENTAR)
+### Game Config
 
 ```
-GET    /bets             # Listar apostas do usuário
-POST   /bets             # Criar aposta
-GET    /bets/:id         # Detalhes da aposta
-DELETE /bets/:id         # Cancelar aposta (antes do sorteio)
+GET    /api/game/config      # Configuração completa do jogo
+GET    /api/game/rules       # Regras do jogo
+GET    /api/game/multipliers # Multiplicadores de prêmios
 ```
 
-### Sorteios (A IMPLEMENTAR)
+### Rodadas (Draws)
 
 ```
-GET    /draws            # Listar sorteios
-GET    /draws/next       # Próximo sorteio
-GET    /draws/:id        # Detalhes do sorteio
-GET    /draws/:id/results # Resultados do sorteio
+GET    /api/rounds           # Listar rodadas
+GET    /api/rounds/next      # Próxima rodada disponível
+GET    /api/rounds/:id       # Detalhes da rodada
+GET    /api/rounds/:id/result # Resultado publicado
 ```
 
-### Carteiras (A IMPLEMENTAR)
+### Apostas (Bets)
 
 ```
-GET    /wallets/me       # Minha carteira
-POST   /wallets/deposit  # Depositar
-POST   /wallets/withdraw # Sacar
+GET    /api/bets/me          # Minhas apostas
+POST   /api/bets             # Criar aposta
+GET    /api/bets/:id         # Detalhes da aposta
+DELETE /api/bets/:id         # Cancelar aposta (antes do cutoff)
 ```
 
-### Transações (A IMPLEMENTAR)
+### Carteiras (Wallets)
 
 ```
-GET    /transactions     # Histórico de transações
-GET    /transactions/:id # Detalhes da transação
+GET    /api/wallets/me       # Minha carteira
+POST   /api/wallets/deposit  # Depositar (PIX/Boleto/Cartão)
+POST   /api/wallets/withdraw # Sacar
+```
+
+### Transações
+
+```
+GET    /api/transactions     # Histórico de transações
+GET    /api/transactions/:id # Detalhes da transação
+```
+
+### Admin (Requer role=admin)
+
+```
+POST   /api/admin/rounds              # Criar rodada
+POST   /api/admin/rounds/:id/publish  # Publicar resultado
+POST   /api/admin/rounds/:id/cancel   # Cancelar rodada
+POST   /api/admin/rounds/close-expired # Fechar rodadas expiradas (cron)
+GET    /api/admin/rounds              # Listar todas as rodadas
+GET    /api/admin/rounds/:id          # Detalhes com estatísticas
 ```
 
 ---
 
-## 🎯 Próximos Passos de Desenvolvimento
+## 🎯 Funcionalidades Implementadas
 
-### Fase 1: Módulos Financeiros (1 semana)
-- [ ] Criar módulo `Wallets`
-- [ ] Criar módulo `Transactions`
-- [ ] Implementar lógica de depósito/saque
-- [ ] Validações de saldo
+### ✅ Módulos do Jogo
+- [x] **GameModule** - Configuração e regras do jogo
+  - Mapeamento dezena → time (00-99 → 1-25)
+  - Processamento de milhares → resultado
+  - Multiplicadores configuráveis
+  - Regras de cutoff (30min antes)
+- [x] **RoundsModule** - Gestão de rodadas
+  - Criação de rodadas agendadas
+  - Bloqueio automático por cutoff
+  - Publicação de resultados
+  - Cancelamento de rodadas
+- [x] **BetsModule** - Sistema de apostas completo
+  - 7 modalidades implementadas
+  - Validações específicas por modalidade
+  - Verificação de saldo
+  - Verificação de cutoff
+  - Cancelamento antes do cutoff
+- [x] **ResultsModule** - Cálculo de vencedores
+  - Processamento automático após publicação
+  - Cálculo de prêmios
+  - Criação de settlements (auditoria)
+  - Creditação automática na carteira
+- [x] **AdminModule** - Gestão administrativa
+  - Endpoints protegidos por role=admin
+  - Gestão completa de rodadas
+  - Publicação de resultados
+- [x] **ResultProviderModule** - Sistema plugável
+  - AdminProvider (entrada manual)
+  - OfficialProvider (stub para API oficial)
 
-### Fase 2: Módulos de Apostas (1 semana)
-- [ ] Criar módulo `Teams`
-- [ ] Seed com 25 times brasileiros
-- [ ] Criar módulo `Bets`
-- [ ] Implementar 7 modalidades de aposta
-- [ ] Validações de apostas
+### ✅ Módulos Financeiros
+- [x] **WalletsModule** - Carteiras de usuários
+- [x] **TransactionsModule** - Histórico de transações
+- [x] **TeamsModule** - 25 times brasileiros
 
-### Fase 3: Sistema de Sorteios (1 semana)
-- [ ] Criar módulo `Draws`
-- [ ] Implementar RNG seguro (Random Number Generation)
-- [ ] Cron job para sorteios automáticos
-- [ ] Processamento de apostas vencedoras
-- [ ] Distribuição de prêmios
+### 🔨 Próximos Passos
 
-### Fase 4: Integrações (1 semana)
+### Fase 1: Integrações de Pagamento (1 semana)
 - [ ] Módulo `PaymentGateways`
-- [ ] Integração Mercado Pago
+- [ ] Integração Mercado Pago (PIX)
 - [ ] Integração PagSeguro
 - [ ] Webhooks de pagamento
-- [ ] Serviço de Email (SendGrid/SES)
-- [ ] Serviço de SMS (Twilio)
+- [ ] Confirmação automática de depósitos
 
-### Fase 5: Admin e Relatórios (5 dias)
-- [ ] Painel administrativo
+### Fase 2: Automação e Cron Jobs (3 dias)
+- [ ] Cron para fechar rodadas expiradas
+- [ ] Cron para notificar resultados
+- [ ] Cron para lembrar de apostas próximas
+- [ ] Cron para limpar dados antigos
+
+### Fase 3: Notificações (3 dias)
+- [ ] Email (SendGrid/AWS SES)
+- [ ] SMS (Twilio)
+- [ ] Push Notifications
+- [ ] WebSocket para eventos em tempo real
+
+### Fase 4: Admin Dashboard (5 dias)
 - [ ] Relatórios de apostas
 - [ ] Relatórios financeiros
 - [ ] Analytics de usuários
+- [ ] Gestão de usuários
+- [ ] Auditoria de ações
 
 ---
 
@@ -304,13 +371,30 @@ npm run test:cov
 
 ## 🎲 Modalidades de Aposta
 
-1. **Time da Sorte** - Apostar em 1 time (R$ 1.000)
-2. **Camisa** - Apostar em número de camisa (R$ 500)
-3. **Dupla** - Apostar em 2 times (R$ 2.500)
-4. **Terno** - Apostar em 3 camisas (R$ 5.000)
-5. **Passe** - Apostar em vários times (R$ 10.000)
-6. **Centena** - Últimos 2 números (R$ 3.000)
-7. **Milhar** - 4 números exatos (R$ 25.000)
+O sistema implementa 7 modalidades de apostas, inspiradas no jogo do bicho mas adaptadas para times de futebol:
+
+| Modalidade | Descrição | Multiplicador | Exemplo |
+|------------|-----------|---------------|---------|
+| **TIME** | Apostar em 1 time (1-25) | 18x | Apostar R$ 10 → Prêmio R$ 180 |
+| **CAMISA** | Apostar em 1 dezena (00-99) | 60x | Apostar R$ 10 → Prêmio R$ 600 |
+| **DUPLA** | Apostar em 2 times diferentes | 600x | Apostar R$ 10 → Prêmio R$ 6.000 |
+| **TERNO** | Apostar em 3 times diferentes | 6000x | Apostar R$ 10 → Prêmio R$ 60.000 |
+| **PASSE** | Time + Dezena (ambos devem sair) | 180x | Apostar R$ 10 → Prêmio R$ 1.800 |
+| **CENTENA** | Últimos 3 dígitos (000-999) | 600x | Apostar R$ 10 → Prêmio R$ 6.000 |
+| **MILHAR** | 4 dígitos exatos (0000-9999) | 4000x | Apostar R$ 10 → Prêmio R$ 40.000 |
+
+### Como Funciona
+
+1. **Sorteio**: São sorteados 5 milhares (ex: 1234, 5678, 9012, 3456, 7890)
+2. **Derivação**: De cada milhar, extrai-se a **dezena** (últimos 2 dígitos)
+3. **Mapeamento**: Cada dezena mapeia para um **time** (00-99 → 1-25)
+4. **Resultado Final**: 5 milhares → 5 dezenas → 5 times únicos
+
+### Regras de Cutoff
+
+- ⏰ **Cutoff**: 30 minutos antes do sorteio
+- 🔒 **Bloqueio**: Apostas automaticamente bloqueadas após cutoff
+- ❌ **Cancelamento**: Apostas podem ser canceladas apenas antes do cutoff (com reembolso)
 
 ---
 
@@ -356,25 +440,31 @@ Este projeto está sob licença privada. Todos os direitos reservados.
 
 ## 🎯 Status do Projeto
 
-**Versão:** 0.0.1 (Alpha)  
-**Status:** 🟡 Em Desenvolvimento
+**Versão:** 1.0.0 (Beta)  
+**Status:** 🟢 Funcional (Backend Core Completo)
 
-### Módulos Implementados
+### Módulos Implementados ✅
 - ✅ Sistema de Autenticação (100%)
 - ✅ Gestão de Usuários (100%)
 - ✅ Sistema de Permissões (100%)
 - ✅ Upload de Arquivos (100%)
 - ✅ Notificações WebSocket (100%)
 - ✅ Infraestrutura Base (100%)
+- ✅ **Carteiras** (100%)
+- ✅ **Transações** (100%)
+- ✅ **Times** (100%)
+- ✅ **Apostas** (100%)
+- ✅ **Sorteios/Rodadas** (100%)
+- ✅ **Cálculo de Vencedores** (100%)
+- ✅ **Admin Panel API** (100%)
+- ✅ **Result Providers** (100%)
 
-### Módulos Pendentes
-- 🆕 Carteiras (0%)
-- 🆕 Transações (0%)
-- 🆕 Times (0%)
-- 🆕 Apostas (0%)
-- 🆕 Sorteios (0%)
+### Módulos Pendentes 🔨
 - 🆕 Payment Gateways (0%)
-- 🆕 Admin Panel (0%)
+- 🆕 Cron Jobs (0%)
+- 🆕 Notificações Email/SMS (0%)
+- 🆕 Admin Dashboard UI (0%)
+- 🆕 Relatórios e Analytics (0%)
 
 ---
 

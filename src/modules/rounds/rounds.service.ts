@@ -1,6 +1,7 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '@/shared/database/prisma/prisma.service';
+import { Injectable, ConflictException, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { GameConfigService } from '../game/game-config.service';
+import { ResultsService } from '../results/results.service';
 import { CreateRoundDto } from './dto/create-round.dto';
 import { PublishResultDto } from './dto/publish-result.dto';
 import { DrawStatus, ResultSource } from '@prisma/client';
@@ -20,6 +21,8 @@ export class RoundsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gameConfig: GameConfigService,
+    @Inject(forwardRef(() => ResultsService))
+    private readonly resultsService: ResultsService,
   ) {}
 
   /**
@@ -266,6 +269,14 @@ export class RoundsService {
         externalRef: publishResultDto.externalRef || draw.externalRef,
       },
     });
+
+    // Processar apostas e calcular vencedores
+    try {
+      await this.resultsService.processDrawBets(id);
+    } catch (error) {
+      console.error('Erro ao processar apostas:', error);
+      // Não falhar a publicação se o processamento falhar
+    }
 
     return {
       ...updatedDraw,

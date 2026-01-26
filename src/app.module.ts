@@ -57,6 +57,10 @@ import {
 // ===============================================
 import { GameModule } from "./modules/game/game.module";
 import { RoundsModule } from "./modules/rounds/rounds.module";
+import { BetsModule } from "./modules/bets/bets.module";
+import { ResultsModule } from "./modules/results/results.module";
+import { AdminModule } from "./modules/admin/admin.module";
+import { ResultProviderModule } from "./modules/result-provider/result-provider.module";
 import { WalletsModule } from "./modules/wallets/wallets.module";
 import { TeamsModule } from "./modules/teams/teams.module";
 import { TransactionsModule } from "./modules/transactions/transactions.module";
@@ -104,11 +108,14 @@ import { TransactionsModule } from "./modules/transactions/transactions.module";
     // ===============================================
     GameModule,
     RoundsModule,
+    BetsModule,
+    ResultsModule,
+    AdminModule,
+    ResultProviderModule,
     WalletsModule,
     TeamsModule,
     TransactionsModule,
     // TODO: Adicionar outros módulos quando criados:
-    // BetsModule,
     // PaymentGatewaysModule,
   ],
   controllers: [AppController],

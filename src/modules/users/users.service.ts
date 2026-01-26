@@ -106,20 +106,58 @@ export class UsersService extends BaseUserService {
       await this.validarSeEmailEhUnico(updateProfileDto.email);
     }
     
+    // Rastrear se houve mudanças reais
+    let hasChanges = false;
+    const unchangedFields: string[] = [];
+
     // Para CPF: só valida se realmente mudou (considerando '', null e undefined como iguais)
     const newCpf = normalize(updateProfileDto.cpf);
     const currentCpf = normalize(user.cpf);
-    if (newCpf && newCpf !== currentCpf) {
-      console.log('📄 Validando CPF:', newCpf, 'vs atual:', currentCpf);
-      await this.validarSeCPFEhUnico(newCpf, userId);
+    if (newCpf) {
+      if (newCpf === currentCpf) {
+        console.log('ℹ️ CPF não mudou:', newCpf);
+        unchangedFields.push('CPF');
+      } else {
+        console.log('📄 Validando CPF:', newCpf, 'vs atual:', currentCpf);
+        await this.validarSeCPFEhUnico(newCpf, userId);
+        hasChanges = true;
+      }
     }
     
     // Para telefone: só valida se realmente mudou (considerando '', null e undefined como iguais)
     const newPhone = normalize(updateProfileDto.phone);
     const currentPhone = normalize(user.phone);
-    if (newPhone && newPhone !== currentPhone) {
-      console.log('📱 Validando telefone:', newPhone, 'vs atual:', currentPhone);
-      await this.validarSePhoneEhUnico(newPhone, userId);
+    if (newPhone) {
+      if (newPhone === currentPhone) {
+        console.log('ℹ️ Telefone não mudou:', newPhone);
+        unchangedFields.push('telefone');
+      } else {
+        console.log('📱 Validando telefone:', newPhone, 'vs atual:', currentPhone);
+        await this.validarSePhoneEhUnico(newPhone, userId);
+        hasChanges = true;
+      }
+    }
+
+    // Verificar se há outros campos mudando
+    if (updateProfileDto.name !== undefined && updateProfileDto.name !== user.name) hasChanges = true;
+    if (updateProfileDto.email !== undefined && updateProfileDto.email !== user.email) hasChanges = true;
+    if (updateProfileDto.address !== undefined && updateProfileDto.address !== user.address) hasChanges = true;
+    if (updateProfileDto.city !== undefined && updateProfileDto.city !== user.city) hasChanges = true;
+    if (updateProfileDto.state !== undefined && updateProfileDto.state !== user.state) hasChanges = true;
+    if (updateProfileDto.zipCode !== undefined && updateProfileDto.zipCode !== user.zipCode) hasChanges = true;
+    if (updateProfileDto.profilePicture !== undefined && updateProfileDto.profilePicture !== user.profilePicture) hasChanges = true;
+
+    // Se não há mudanças reais, retornar notificação
+    if (!hasChanges && unchangedFields.length > 0) {
+      console.log('ℹ️ Nenhuma mudança detectada nos campos:', unchangedFields.join(', '));
+      return {
+        ...user,
+        _notification: {
+          type: 'info',
+          message: `Os dados informados (${unchangedFields.join(', ')}) já estão cadastrados em seu perfil.`,
+          unchangedFields,
+        },
+      } as any;
     }
 
     // Preparar dados para atualização (apenas campos permitidos)
@@ -138,6 +176,7 @@ export class UsersService extends BaseUserService {
     // Atualizar usuário
     const updatedUser = await this.userRepository.atualizar({ id: userId }, updateData);
 
+    console.log('✅ Perfil atualizado com sucesso');
     return updatedUser;
   }
 }
