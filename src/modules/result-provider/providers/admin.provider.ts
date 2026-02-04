@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ResultSource } from '@prisma/client';
+import { ResultSource, RoundCategory } from '@prisma/client';
 import { IResultProvider, DrawResultData } from '../interfaces/result-provider.interface';
 
 /**
@@ -20,7 +20,7 @@ export class AdminProvider implements IResultProvider {
     return true;
   }
 
-  async fetchResult(scheduledAt: Date): Promise<DrawResultData | null> {
+  async fetchResult(scheduledAt: Date, category?: RoundCategory): Promise<DrawResultData | null> {
     // Admin provider não busca resultados automaticamente
     // Resultados são inseridos manualmente via API
     return null;

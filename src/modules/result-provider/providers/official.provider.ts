@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ResultSource } from '@prisma/client';
+import { ResultSource, RoundCategory } from '@prisma/client';
 import { IResultProvider, DrawResultData } from '../interfaces/result-provider.interface';
 
 /**
@@ -45,7 +45,7 @@ export class OfficialProvider implements IResultProvider {
     return true;
   }
 
-  async fetchResult(scheduledAt: Date): Promise<DrawResultData | null> {
+  async fetchResult(scheduledAt: Date, category?: RoundCategory): Promise<DrawResultData | null> {
     const available = await this.isAvailable();
     
     if (!available) {

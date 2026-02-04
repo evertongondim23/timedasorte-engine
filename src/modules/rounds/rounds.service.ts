@@ -1,7 +1,8 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, BadRequestException, Inject, forwardRef, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { GameConfigService } from '../game/game-config.service';
 import { ResultsService } from '../results/results.service';
+import { ResultProviderService } from '../result-provider/result-provider.service';
 import { CreateRoundDto } from './dto/create-round.dto';
 import { PublishResultDto } from './dto/publish-result.dto';
 import { DrawStatus, ResultSource } from '@prisma/client';
@@ -18,11 +19,14 @@ import { DrawStatus, ResultSource } from '@prisma/client';
 
 @Injectable()
 export class RoundsService {
+  private readonly logger = new Logger(RoundsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly gameConfig: GameConfigService,
     @Inject(forwardRef(() => ResultsService))
     private readonly resultsService: ResultsService,
+    private readonly resultProviderService: ResultProviderService,
   ) {}
 
   /**
@@ -41,9 +45,10 @@ export class RoundsService {
     // Calcular o cutoff (30 minutos antes)
     const cutoffAt = this.gameConfig.calculateCutoffTime(scheduledAt);
 
-    // Verificar se já existe uma rodada para esse horário
+    // Verificar se já existe uma rodada para essa categoria e horário
     const existing = await this.prisma.draw.findFirst({
       where: {
+        category: createRoundDto.category,
         scheduledAt,
         deletedAt: null,
         status: {
@@ -61,6 +66,7 @@ export class RoundsService {
     // Criar a rodada
     const draw = await this.prisma.draw.create({
       data: {
+        category: createRoundDto.category,
         scheduledAt,
         cutoffAt,
         status: DrawStatus.OPEN,
@@ -282,6 +288,96 @@ export class RoundsService {
       ...updatedDraw,
       message: 'Resultado publicado com sucesso. Processamento de apostas iniciado.',
     };
+  }
+
+  /**
+   * Busca resultado automaticamente do provider externo
+   * 
+   * @param id ID da rodada
+   * @param providerName Nome do provider (opcional, usa OJOGODOBICHO por padrão)
+   * @returns Resultado encontrado ou null
+   */
+  async fetchResultFromProvider(id: string, providerName?: string) {
+    const draw = await this.prisma.draw.findUnique({
+      where: { id, deletedAt: null },
+    });
+
+    if (!draw) {
+      throw new NotFoundException(`Rodada ${id} não encontrada`);
+    }
+
+    if (draw.status === DrawStatus.COMPLETED || draw.status === DrawStatus.PUBLISHED) {
+      throw new ConflictException('Esta rodada já foi finalizada');
+    }
+
+    // Se não especificou provider, tenta OJOGODOBICHO primeiro
+    const provider = providerName || 'OJOGODOBICHO';
+    
+    this.logger.log(`🔍 Buscando resultado para rodada ${id} (${draw.category}) via ${provider}...`);
+
+    try {
+      const result = await this.resultProviderService.fetchFromProvider(
+        provider,
+        draw.scheduledAt,
+        draw.category,
+      );
+
+      if (!result) {
+        this.logger.warn(`⚠️ Nenhum resultado encontrado para rodada ${id} via ${provider}`);
+        return {
+          success: false,
+          message: `Nenhum resultado encontrado via ${provider}`,
+        };
+      }
+
+      // Validar resultado
+      if (!this.resultProviderService.validateResult(provider, result.milhares)) {
+        this.logger.error(`❌ Resultado inválido para rodada ${id}: ${result.milhares.join(', ')}`);
+        return {
+          success: false,
+          message: 'Resultado encontrado mas inválido',
+          data: result,
+        };
+      }
+
+      this.logger.log(`✅ Resultado encontrado: ${result.milhares.join(', ')}`);
+
+      return {
+        success: true,
+        message: 'Resultado encontrado com sucesso',
+        data: result,
+      };
+    } catch (error) {
+      this.logger.error(`❌ Erro ao buscar resultado: ${error.message}`, error.stack);
+      return {
+        success: false,
+        message: `Erro ao buscar resultado: ${error.message}`,
+      };
+    }
+  }
+
+  /**
+   * Busca e publica resultado automaticamente do provider externo
+   * 
+   * @param id ID da rodada
+   * @param providerName Nome do provider (opcional)
+   * @returns Rodada atualizada com resultado publicado
+   */
+  async fetchAndPublishResult(id: string, providerName?: string) {
+    const fetchResult = await this.fetchResultFromProvider(id, providerName);
+
+    if (!fetchResult.success || !fetchResult.data) {
+      throw new NotFoundException(fetchResult.message || 'Resultado não encontrado');
+    }
+
+    const result = fetchResult.data;
+
+    // Publicar resultado usando o método existente
+    return await this.publishResult(id, {
+      milhares: result.milhares,
+      source: result.source,
+      externalRef: result.externalRef,
+    });
   }
 
   /**

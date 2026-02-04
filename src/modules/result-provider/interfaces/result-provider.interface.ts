@@ -1,4 +1,4 @@
-import { ResultSource } from '@prisma/client';
+import { ResultSource, RoundCategory } from '@prisma/client';
 
 /**
  * 🔌 RESULT PROVIDER INTERFACE
@@ -28,9 +28,10 @@ export interface IResultProvider {
    * Busca o resultado de um sorteio agendado
    * 
    * @param scheduledAt Data/hora do sorteio agendado
+   * @param category Categoria da rodada (opcional, alguns providers podem usar)
    * @returns Dados do resultado ou null se não disponível ainda
    */
-  fetchResult(scheduledAt: Date): Promise<DrawResultData | null>;
+  fetchResult(scheduledAt: Date, category?: RoundCategory): Promise<DrawResultData | null>;
 
   /**
    * Valida se um resultado é válido

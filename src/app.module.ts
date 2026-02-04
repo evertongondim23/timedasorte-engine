@@ -5,6 +5,7 @@ import {
   ValidationPipe,
 } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { ScheduleModule } from "@nestjs/schedule";
 import { APP_INTERCEPTOR, APP_PIPE, APP_FILTER } from "@nestjs/core";
 
 import { AppController } from "./app.controller";
@@ -78,6 +79,7 @@ import { TransactionsModule } from "./modules/transactions/transactions.module";
       isGlobal: true,
       envFilePath: ".env",
     }),
+    ScheduleModule.forRoot(),
 
     // ===============================================
     // 🏗️ MÓDULOS DE INFRAESTRUTURA

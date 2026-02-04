@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AdminProvider } from './providers/admin.provider';
 import { OfficialProvider } from './providers/official.provider';
+import { OJogoDoBichoProvider } from './providers/ojogodobicho.provider';
 import { IResultProvider } from './interfaces/result-provider.interface';
 
 /**
@@ -17,10 +18,12 @@ export class ResultProviderService {
   constructor(
     private readonly adminProvider: AdminProvider,
     private readonly officialProvider: OfficialProvider,
+    private readonly ojogodobichoProvider: OJogoDoBichoProvider,
   ) {
     // Registrar providers disponíveis
     this.registerProvider(adminProvider);
     this.registerProvider(officialProvider);
+    this.registerProvider(ojogodobichoProvider);
   }
 
   /**
@@ -55,7 +58,7 @@ export class ResultProviderService {
   /**
    * Tenta buscar resultado de um provider específico
    */
-  async fetchFromProvider(providerName: string, scheduledAt: Date) {
+  async fetchFromProvider(providerName: string, scheduledAt: Date, category?: any) {
     const provider = this.getProvider(providerName);
 
     if (!provider) {
@@ -69,21 +72,30 @@ export class ResultProviderService {
       return null;
     }
 
-    return await provider.fetchResult(scheduledAt);
+    return await provider.fetchResult(scheduledAt, category);
   }
 
   /**
    * Tenta buscar resultado de todos os providers (fallback)
    */
-  async fetchFromAnyProvider(scheduledAt: Date) {
-    // Tentar primeiro o official provider
-    const officialResult = await this.fetchFromProvider('OFFICIAL', scheduledAt);
+  async fetchFromAnyProvider(scheduledAt: Date, category?: any) {
+    // Tentar primeiro o OJOGODOBICHO provider
+    const ojogodobichoResult = await this.fetchFromProvider('OJOGODOBICHO', scheduledAt, category);
+    if (ojogodobichoResult) {
+      this.logger.log(`✅ Resultado encontrado via OJOGODOBICHO para categoria ${category || 'N/A'}`);
+      return ojogodobichoResult;
+    }
+
+    // Tentar o official provider
+    const officialResult = await this.fetchFromProvider('OFFICIAL', scheduledAt, category);
     if (officialResult) {
+      this.logger.log(`✅ Resultado encontrado via OFFICIAL para categoria ${category || 'N/A'}`);
       return officialResult;
     }
 
-    // Se não houver resultado oficial, não há fallback
+    // Se não houver resultado, não há fallback
     // Admin provider não busca resultados automaticamente
+    this.logger.warn(`⚠️ Nenhum resultado encontrado para categoria ${category || 'N/A'}`);
     return null;
   }
 

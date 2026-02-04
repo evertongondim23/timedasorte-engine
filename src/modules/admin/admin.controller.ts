@@ -190,4 +190,56 @@ export class AdminController {
   ) {
     return await this.roundsService.findOne(id);
   }
+
+  /**
+   * POST /api/admin/rounds/:id/fetch-result
+   * 
+   * Busca resultado automaticamente do provider externo
+   */
+  @Post('rounds/:id/fetch-result')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'Buscar resultado do provider',
+    description: 'Busca resultado automaticamente do provider externo (OJOGODOBICHO) e retorna os dados encontrados.' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Resultado encontrado (mas não publicado ainda)' 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Rodada não encontrada ou resultado não disponível' 
+  })
+  async fetchResult(
+    @Param('id') id: string,
+    @Query('provider') provider?: string,
+  ) {
+    return await this.roundsService.fetchResultFromProvider(id, provider);
+  }
+
+  /**
+   * POST /api/admin/rounds/:id/fetch-and-publish
+   * 
+   * Busca e publica resultado automaticamente do provider externo
+   */
+  @Post('rounds/:id/fetch-and-publish')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ 
+    summary: 'Buscar e publicar resultado',
+    description: 'Busca resultado do provider externo e publica automaticamente na rodada.' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Resultado encontrado e publicado com sucesso' 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Rodada não encontrada ou resultado não disponível' 
+  })
+  async fetchAndPublishResult(
+    @Param('id') id: string,
+    @Query('provider') provider?: string,
+  ) {
+    return await this.roundsService.fetchAndPublishResult(id, provider);
+  }
 }

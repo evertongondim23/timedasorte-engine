@@ -96,13 +96,24 @@ enum BetStatus {
 }
 
 enum DrawStatus {
-  SCHEDULED   // Agendado
-  OPEN        // Aberto para apostas
-  CLOSED      // Fechado para apostas (cutoff)
-  IN_PROGRESS // Em andamento
-  COMPLETED   // Concluído
-  CANCELLED   // Cancelado
-  FAILED      // Falhou
+  SCHEDULED     // Agendado
+  OPEN          // Aberto para apostas
+  CLOSED        // Fechado para apostas (cutoff)
+  PENDING_RESULT // Aguardando resultado (após scheduledAt, antes de publicado)
+  IN_PROGRESS   // Em andamento
+  PUBLISHED     // Resultado publicado
+  COMPLETED     // Concluído
+  CANCELLED     // Cancelado
+  FAILED        // Falhou
+}
+
+enum RoundCategory {
+  PTM  // Primeiro Turno Manhã (11:00)
+  PPT  // Primeiro Turno Tarde (14:00)
+  PT   // Primeiro Turno (16:00)
+  PTV  // Primeiro Turno Vespertino (18:00)
+  PTN  // Primeiro Turno Noite (21:00)
+  COR  // Corujão (00:30 - próximo dia)
 }
 
 enum ResultSource {
@@ -368,6 +379,7 @@ model BetTeam {
 
 model Draw {
   id          String       @id @default(cuid())
+  category    RoundCategory // Categoria da rodada (PTM, PPT, PT, PTV, PTN, COR)
   scheduledAt DateTime     // Data/hora agendada para publicação do resultado
   cutoffAt    DateTime     // Data/hora limite para apostas (scheduledAt - 30min)
   publishedAt DateTime?    // Data/hora de publicação do resultado
@@ -406,6 +418,8 @@ model Draw {
   @@index([cutoffAt])
   @@index([status])
   @@index([source])
+  @@index([category])
+  @@index([category, scheduledAt])
   @@index([executedAt])
   @@index([deletedAt])
 }

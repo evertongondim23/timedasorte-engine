@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { RoundsService } from './rounds.service';
+import { RoundScheduleService } from './round-schedule.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /**
@@ -11,7 +12,31 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 @ApiTags('Rounds')
 @Controller('rounds')
 export class RoundsController {
-  constructor(private readonly roundsService: RoundsService) {}
+  constructor(
+    private readonly roundsService: RoundsService,
+    private readonly scheduleService: RoundScheduleService,
+  ) {}
+
+  /**
+   * GET /api/rounds/available
+   * 
+   * Retorna informações sobre rodadas disponíveis:
+   * - available: próxima rodada OPEN (pode apostar)
+   * - nextClosed: próxima rodada CLOSED/PENDING_RESULT (aguardando resultado)
+   * - nextScheduled: próxima rodada agendada (ainda não abriu)
+   */
+  @Get('available')
+  @ApiOperation({ 
+    summary: 'Obter rodadas disponíveis',
+    description: 'Retorna próxima rodada disponível, próxima fechada e próxima agendada' 
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Informações de rodadas retornadas com sucesso' 
+  })
+  async getAvailable() {
+    return await this.scheduleService.getAvailableRoundsInfo();
+  }
 
   /**
    * GET /api/rounds/next
@@ -32,7 +57,7 @@ export class RoundsController {
     description: 'Nenhuma rodada disponível' 
   })
   async getNext() {
-    return await this.roundsService.getNext();
+    return await this.scheduleService.getNextAvailableRound();
   }
 
   /**
