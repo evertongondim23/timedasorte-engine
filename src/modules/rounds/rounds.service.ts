@@ -1,15 +1,23 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException, Inject, forwardRef, Logger } from '@nestjs/common';
-import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { GameConfigService } from '../game/game-config.service';
-import { ResultsService } from '../results/results.service';
-import { ResultProviderService } from '../result-provider/result-provider.service';
-import { CreateRoundDto } from './dto/create-round.dto';
-import { PublishResultDto } from './dto/publish-result.dto';
-import { DrawStatus, ResultSource } from '@prisma/client';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+  Inject,
+  forwardRef,
+  Logger,
+} from "@nestjs/common";
+import { PrismaService } from "src/shared/prisma/prisma.service";
+import { GameConfigService } from "../game/game-config.service";
+import { ResultsService } from "../results/results.service";
+import { ResultProviderService } from "../result-provider/result-provider.service";
+import { CreateRoundDto } from "./dto/create-round.dto";
+import { PublishResultDto } from "./dto/publish-result.dto";
+import { DrawStatus, ResultSource } from "@prisma/client";
 
 /**
  * 🎰 ROUNDS SERVICE
- * 
+ *
  * Serviço responsável por gerenciar rodadas (draws) do jogo:
  * - Criação de rodadas
  * - Publicação de resultados
@@ -34,12 +42,10 @@ export class RoundsService {
    */
   async create(createRoundDto: CreateRoundDto) {
     const scheduledAt = new Date(createRoundDto.scheduledAt);
-    
+
     // Validar que a data é futura
     if (scheduledAt <= new Date()) {
-      throw new BadRequestException(
-        'A data agendada deve ser no futuro',
-      );
+      throw new BadRequestException("A data agendada deve ser no futuro");
     }
 
     // Calcular o cutoff (30 minutos antes)
@@ -104,7 +110,7 @@ export class RoundsService {
         deletedAt: null,
       },
       orderBy: {
-        scheduledAt: 'asc',
+        scheduledAt: "asc",
       },
     });
 
@@ -163,7 +169,7 @@ export class RoundsService {
 
     if (draw.status === DrawStatus.OPEN || draw.status === DrawStatus.CLOSED) {
       throw new BadRequestException(
-        'O resultado desta rodada ainda não foi publicado',
+        "O resultado desta rodada ainda não foi publicado",
       );
     }
 
@@ -202,7 +208,7 @@ export class RoundsService {
         skip,
         take: limit,
         orderBy: {
-          scheduledAt: 'desc',
+          scheduledAt: "desc",
         },
         include: {
           _count: {
@@ -236,7 +242,7 @@ export class RoundsService {
 
   /**
    * Publica o resultado de uma rodada
-   * 
+   *
    * Esta é a operação crítica que:
    * 1. Valida os milhares
    * 2. Calcula dezenas e times
@@ -254,7 +260,7 @@ export class RoundsService {
 
     if (draw.status === DrawStatus.COMPLETED) {
       throw new ConflictException(
-        'Esta rodada já foi finalizada e não pode ser alterada',
+        "Esta rodada já foi finalizada e não pode ser alterada",
       );
     }
 
@@ -280,19 +286,20 @@ export class RoundsService {
     try {
       await this.resultsService.processDrawBets(id);
     } catch (error) {
-      console.error('Erro ao processar apostas:', error);
+      console.error("Erro ao processar apostas:", error);
       // Não falhar a publicação se o processamento falhar
     }
 
     return {
       ...updatedDraw,
-      message: 'Resultado publicado com sucesso. Processamento de apostas iniciado.',
+      message:
+        "Resultado publicado com sucesso. Processamento de apostas iniciado.",
     };
   }
 
   /**
    * Busca resultado automaticamente do provider externo
-   * 
+   *
    * @param id ID da rodada
    * @param providerName Nome do provider (opcional, usa OJOGODOBICHO por padrão)
    * @returns Resultado encontrado ou null
@@ -306,14 +313,19 @@ export class RoundsService {
       throw new NotFoundException(`Rodada ${id} não encontrada`);
     }
 
-    if (draw.status === DrawStatus.COMPLETED || draw.status === DrawStatus.PUBLISHED) {
-      throw new ConflictException('Esta rodada já foi finalizada');
+    if (
+      draw.status === DrawStatus.COMPLETED ||
+      draw.status === DrawStatus.PUBLISHED
+    ) {
+      throw new ConflictException("Esta rodada já foi finalizada");
     }
 
     // Se não especificou provider, tenta OJOGODOBICHO primeiro
-    const provider = providerName || 'OJOGODOBICHO';
-    
-    this.logger.log(`🔍 Buscando resultado para rodada ${id} (${draw.category}) via ${provider}...`);
+    const provider = providerName || "OJOGODOBICHO";
+
+    this.logger.log(
+      `🔍 Buscando resultado para rodada ${id} (${draw.category}) via ${provider}...`,
+    );
 
     try {
       const result = await this.resultProviderService.fetchFromProvider(
@@ -323,7 +335,9 @@ export class RoundsService {
       );
 
       if (!result) {
-        this.logger.warn(`⚠️ Nenhum resultado encontrado para rodada ${id} via ${provider}`);
+        this.logger.warn(
+          `⚠️ Nenhum resultado encontrado para rodada ${id} via ${provider}`,
+        );
         return {
           success: false,
           message: `Nenhum resultado encontrado via ${provider}`,
@@ -331,24 +345,31 @@ export class RoundsService {
       }
 
       // Validar resultado
-      if (!this.resultProviderService.validateResult(provider, result.milhares)) {
-        this.logger.error(`❌ Resultado inválido para rodada ${id}: ${result.milhares.join(', ')}`);
+      if (
+        !this.resultProviderService.validateResult(provider, result.milhares)
+      ) {
+        this.logger.error(
+          `❌ Resultado inválido para rodada ${id}: ${result.milhares.join(", ")}`,
+        );
         return {
           success: false,
-          message: 'Resultado encontrado mas inválido',
+          message: "Resultado encontrado mas inválido",
           data: result,
         };
       }
 
-      this.logger.log(`✅ Resultado encontrado: ${result.milhares.join(', ')}`);
+      this.logger.log(`✅ Resultado encontrado: ${result.milhares.join(", ")}`);
 
       return {
         success: true,
-        message: 'Resultado encontrado com sucesso',
+        message: "Resultado encontrado com sucesso",
         data: result,
       };
     } catch (error) {
-      this.logger.error(`❌ Erro ao buscar resultado: ${error.message}`, error.stack);
+      this.logger.error(
+        `❌ Erro ao buscar resultado: ${error.message}`,
+        error.stack,
+      );
       return {
         success: false,
         message: `Erro ao buscar resultado: ${error.message}`,
@@ -358,7 +379,7 @@ export class RoundsService {
 
   /**
    * Busca e publica resultado automaticamente do provider externo
-   * 
+   *
    * @param id ID da rodada
    * @param providerName Nome do provider (opcional)
    * @returns Rodada atualizada com resultado publicado
@@ -367,7 +388,9 @@ export class RoundsService {
     const fetchResult = await this.fetchResultFromProvider(id, providerName);
 
     if (!fetchResult.success || !fetchResult.data) {
-      throw new NotFoundException(fetchResult.message || 'Resultado não encontrado');
+      throw new NotFoundException(
+        fetchResult.message || "Resultado não encontrado",
+      );
     }
 
     const result = fetchResult.data;
@@ -420,7 +443,7 @@ export class RoundsService {
 
     if (draw.status === DrawStatus.COMPLETED) {
       throw new ConflictException(
-        'Não é possível cancelar uma rodada finalizada',
+        "Não é possível cancelar uma rodada finalizada",
       );
     }
 
@@ -436,7 +459,7 @@ export class RoundsService {
 
     return {
       ...updated,
-      message: `Rodada cancelada. ${reason || 'Sem motivo especificado'}.`,
+      message: `Rodada cancelada. ${reason || "Sem motivo especificado"}.`,
     };
   }
 

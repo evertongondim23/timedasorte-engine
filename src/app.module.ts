@@ -25,6 +25,7 @@ import { PrometheusModule } from "@willsoto/nestjs-prometheus";
 import { LoggerModule } from "./shared/common/logger/logger.module";
 import { MessagesModule } from "./shared/common/messages/messages.module";
 import { PrismaModule } from "./shared/prisma/prisma.module";
+import { AsaasModule } from "./shared/asaas/asaas.module";
 import { CaslModule } from "./shared/casl/casl.module";
 import { TenantModule } from "./shared/tenant/tenant.module";
 import { UniversalModule } from "./shared/universal/universal.module";
@@ -87,6 +88,7 @@ import { TransactionsModule } from "./modules/transactions/transactions.module";
     LoggerModule,
     MessagesModule,
     PrismaModule,
+    AsaasModule,
     CaslModule,
     TenantModule,
     UniversalModule,

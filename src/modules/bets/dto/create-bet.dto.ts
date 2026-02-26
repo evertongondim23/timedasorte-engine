@@ -1,4 +1,4 @@
-import { IsEnum, IsNumber, IsArray, IsInt, Min, Max, IsOptional, ValidateIf, ArrayMinSize, ArrayMaxSize } from 'class-validator';
+import { IsEnum, IsNumber, IsArray, IsInt, Min, Max, IsOptional, ValidateIf, IsString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BetModality } from '@prisma/client';
 import { Type } from 'class-transformer';
@@ -8,6 +8,7 @@ export class CreateBetDto {
     description: 'ID da rodada (draw) para a qual a aposta será feita',
     example: 'cl9abc123xyz',
   })
+  @IsString()
   drawId: string;
 
   @ApiProperty({
@@ -41,7 +42,6 @@ export class CreateBetDto {
   @IsArray()
   @IsInt({ each: true })
   @Min(1, { each: true })
-  @Max(25, { each: true })
   @ValidateIf((o) => [BetModality.TIME, BetModality.DUPLA, BetModality.TERNO, BetModality.PASSE].includes(o.modality))
   teamIds?: number[];
 

@@ -33,6 +33,9 @@
     "prisma:prod": "./scripts/prisma-switch.sh prod",
     "prisma:erd": "npx prisma generate",
     "dev:setup": "npm run db:init:dev && npm run prisma:seed",
+    "verify:results": "ts-node scripts/verify-ojogodobicho.ts",
+    "asaas:customers": "ts-node scripts/list-asaas-customers.ts",
+    "generate:rounds": "ts-node scripts/generate-rounds.ts",
     "prisma:pull": "prisma db pull",
     "prisma:push": "prisma db push"
   },

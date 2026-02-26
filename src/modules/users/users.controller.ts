@@ -21,6 +21,7 @@ import { CreateAdminDto } from "./dto/create-admin.dto";
 import { TenantInterceptor } from "src/shared/tenant/tenant.interceptor";
 import { CurrentUser } from "src/shared/auth/decorators/current-user.decorator";
 import { UserPayload } from "src/shared/auth/interfaces/user-payload.interface";
+import { SubmitKycSelfieDto } from "./dto/submit-kyc-selfie.dto";
 
 // 🎯 CASL Decorators
 import {
@@ -74,6 +75,19 @@ export class UsersController {
     @Body() updateProfileDto: UpdateProfileDto
   ) {
     return this.service.atualizarPerfil(user.id, updateProfileDto);
+  }
+
+  @Get("me/kyc/status")
+  getMyKycStatus(@CurrentUser() user: UserPayload) {
+    return this.service.getMyKycStatus(user.id);
+  }
+
+  @Post("me/kyc/selfie")
+  submitKycSelfie(
+    @CurrentUser() user: UserPayload,
+    @Body() dto: SubmitKycSelfieDto,
+  ) {
+    return this.service.submitKycSelfie(user.id, dto);
   }
 
   @Get("search")

@@ -9,19 +9,20 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
-} from '@nestjs/common';
-import { WalletsService } from './wallets.service';
-import { CreateWalletDto } from './dto/create-wallet.dto';
-import { UpdateWalletDto } from './dto/update-wallet.dto';
-import { DepositDto } from './dto/deposit.dto';
-import { WithdrawDto } from './dto/withdraw.dto';
-import { AuthGuard } from '../../shared/auth/guards/auth.guard';
-import { CurrentUser } from '../../shared/auth/decorators/current-user.decorator';
-import { UserPayload } from '../../shared/auth/interfaces/user-payload.interface';
-import { Roles } from '@prisma/client';
-import { RequiredRoles } from '../../shared/auth/required-roles.decorator';
+} from "@nestjs/common";
+import { WalletsService } from "./wallets.service";
+import { CreateWalletDto } from "./dto/create-wallet.dto";
+import { UpdateWalletDto } from "./dto/update-wallet.dto";
+import { DepositDto } from "./dto/deposit.dto";
+import { RequestDepositDto } from "./dto/request-deposit.dto";
+import { WithdrawDto } from "./dto/withdraw.dto";
+import { AuthGuard } from "../../shared/auth/guards/auth.guard";
+import { CurrentUser } from "../../shared/auth/decorators/current-user.decorator";
+import { UserPayload } from "../../shared/auth/interfaces/user-payload.interface";
+import { Roles } from "@prisma/client";
+import { RequiredRoles } from "../../shared/auth/required-roles.decorator";
 
-@Controller('wallets')
+@Controller("wallets")
 @UseGuards(AuthGuard)
 export class WalletsController {
   constructor(private readonly walletsService: WalletsService) {}
@@ -48,7 +49,7 @@ export class WalletsController {
    * Consultar minha carteira
    * Cria automaticamente se não existir
    */
-  @Get('me')
+  @Get("me")
   async findMine(@CurrentUser() user: UserPayload) {
     return this.walletsService.findOrCreateByUserId(user.id);
   }
@@ -56,7 +57,7 @@ export class WalletsController {
   /**
    * Consultar meu saldo
    */
-  @Get('me/balance')
+  @Get("me/balance")
   async getMyBalance(@CurrentUser() user: UserPayload) {
     return this.walletsService.getBalance(user.id);
   }
@@ -64,46 +65,69 @@ export class WalletsController {
   /**
    * Buscar carteira por ID (admin)
    */
-  @Get(':id')
+  @Get(":id")
   @RequiredRoles(Roles.ADMIN, Roles.SYSTEM_ADMIN)
-  findOne(@Param('id') id: string) {
+  findOne(@Param("id") id: string) {
     return this.walletsService.findOne(id);
   }
- //  [TODO] - Remover apos teste em desenvolvimento
+  //  [TODO] - Remover apos teste em desenvolvimento
   /**
    * Atualizar carteira (admin)
    */
-  @Patch(':id')
+  @Patch(":id")
   @RequiredRoles(Roles.ADMIN, Roles.SYSTEM_ADMIN)
-  update(@Param('id') id: string, @Body() updateWalletDto: UpdateWalletDto) {
+  update(@Param("id") id: string, @Body() updateWalletDto: UpdateWalletDto) {
     return this.walletsService.update(id, updateWalletDto);
   }
 
   /**
-   * Depositar na minha carteira
+   * Solicitar depósito via PIX (gera cobrança Asaas e retorna QR Code)
    */
-  @Post('me/deposit')
+  @Post("me/deposit-request")
   @HttpCode(HttpStatus.OK)
-  async deposit(@CurrentUser() user: UserPayload, @Body() depositDto: DepositDto) {
+  async requestDeposit(
+    @CurrentUser() user: UserPayload,
+    @Body() dto: RequestDepositDto,
+  ) {
+    console.log("requestDepositPix", user.id, dto.amount, dto.description);
+    return this.walletsService.requestDepositPix(
+      user.id,
+      dto.amount,
+      dto.description,
+    );
+  }
+
+  /**
+   * Depositar na minha carteira (crédito direto; usado por webhook/admin)
+   */
+  @Post("me/deposit")
+  @HttpCode(HttpStatus.OK)
+  async deposit(
+    @CurrentUser() user: UserPayload,
+    @Body() depositDto: DepositDto,
+  ) {
     return this.walletsService.deposit(user.id, depositDto);
   }
 
   /**
    * Sacar da minha carteira
    */
-  @Post('me/withdraw')
+  @Post("me/withdraw")
   @HttpCode(HttpStatus.OK)
-  async withdraw(@CurrentUser() user: UserPayload, @Body() withdrawDto: WithdrawDto) {
+  async withdraw(
+    @CurrentUser() user: UserPayload,
+    @Body() withdrawDto: WithdrawDto,
+  ) {
     return this.walletsService.withdraw(user.id, withdrawDto);
   }
 
   /**
    * Deletar carteira (admin) - soft delete
    */
-  @Delete(':id')
+  @Delete(":id")
   @RequiredRoles(Roles.ADMIN, Roles.SYSTEM_ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string) {
+  async remove(@Param("id") id: string) {
     return this.walletsService.remove(id);
   }
 }

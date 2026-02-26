@@ -28,10 +28,10 @@ export class BetsService {
   async create(userId: string, createBetDto: CreateBetDto) {
     // 1. Validar rodada existe e está aberta
     const draw = await this.prisma.draw.findUnique({
-      where: { id: createBetDto.drawId, deletedAt: null },
+      where: { id: createBetDto.drawId },
     });
 
-    if (!draw) {
+    if (!draw || draw.deletedAt) {
       throw new NotFoundException('Rodada não encontrada');
     }
 
@@ -44,7 +44,7 @@ export class BetsService {
     }
 
     // 3. Validar campos específicos da modalidade
-    this.validateBetByModality(createBetDto);
+    await this.validateBetByModality(createBetDto);
 
     // 4. Verificar saldo do usuário
     const wallet = await this.walletsService.findOrCreateByUserId(userId);
@@ -54,10 +54,25 @@ export class BetsService {
       );
     }
 
-    // 5. Obter multiplicador da modalidade
+    // 5. Validar que todos os teamIds existem na tabela Team (evita FK violation)
+    if (createBetDto.teamIds && createBetDto.teamIds.length > 0) {
+      const existingTeams = await this.prisma.team.findMany({
+        where: { id: { in: createBetDto.teamIds }, deletedAt: null },
+        select: { id: true },
+      });
+      const existingIds = new Set(existingTeams.map((t) => t.id));
+      const invalidIds = createBetDto.teamIds.filter((id) => !existingIds.has(id));
+      if (invalidIds.length > 0) {
+        throw new BadRequestException(
+          `Times não encontrados (IDs inválidos: ${invalidIds.join(', ')}). Use os times retornados por GET /teams.`,
+        );
+      }
+    }
+
+    // 6. Obter multiplicador da modalidade
     const multiplier = this.gameConfig.getMultiplierForModality(createBetDto.modality);
 
-    // 6. Criar a aposta dentro de uma transação
+    // 7. Criar a aposta dentro de uma transação
     const bet = await this.prisma.$transaction(async (prisma) => {
       // Criar a aposta
       const newBet = await prisma.bet.create({
@@ -114,7 +129,7 @@ export class BetsService {
   /**
    * Valida os campos específicos de cada modalidade
    */
-  private validateBetByModality(dto: CreateBetDto): void {
+  private async validateBetByModality(dto: CreateBetDto): Promise<void> {
     switch (dto.modality) {
       case BetModality.TIME:
         this.validateTimeModality(dto);
@@ -133,7 +148,7 @@ export class BetsService {
         break;
 
       case BetModality.PASSE:
-        this.validatePasseModality(dto);
+        await this.validatePasseModality(dto);
         break;
 
       case BetModality.CENTENA:
@@ -150,16 +165,12 @@ export class BetsService {
   }
 
   /**
-   * TIME: Escolher 1 time (1..25)
+   * TIME: Escolher 1 time
+   * (existência do ID é validada depois contra a tabela Team)
    */
   private validateTimeModality(dto: CreateBetDto): void {
     if (!dto.teamIds || dto.teamIds.length !== 1) {
       throw new BadRequestException('Modalidade TIME requer exatamente 1 time');
-    }
-
-    const teamId = dto.teamIds[0];
-    if (teamId < 1 || teamId > 25) {
-      throw new BadRequestException('Time deve estar entre 1 e 25');
     }
   }
 
@@ -187,10 +198,6 @@ export class BetsService {
 
     const [team1, team2] = dto.teamIds;
 
-    if (team1 < 1 || team1 > 25 || team2 < 1 || team2 > 25) {
-      throw new BadRequestException('Times devem estar entre 1 e 25');
-    }
-
     if (team1 === team2) {
       throw new BadRequestException('Os dois times devem ser diferentes');
     }
@@ -208,18 +215,13 @@ export class BetsService {
     if (uniqueTeams.size !== 3) {
       throw new BadRequestException('Os 3 times devem ser diferentes');
     }
-
-    for (const teamId of dto.teamIds) {
-      if (teamId < 1 || teamId > 25) {
-        throw new BadRequestException('Times devem estar entre 1 e 25');
-      }
-    }
   }
 
   /**
-   * PASSE: Escolher 1 time e 1 dezena que pertence a ele
+   * PASSE: Escolher 1 time e 1 dezena que pertence a ele.
+   * Usa as camisas do time no banco (não exige id 1-25).
    */
-  private validatePasseModality(dto: CreateBetDto): void {
+  private async validatePasseModality(dto: CreateBetDto): Promise<void> {
     if (!dto.teamIds || dto.teamIds.length !== 1) {
       throw new BadRequestException('Modalidade PASSE requer exatamente 1 time');
     }
@@ -231,19 +233,22 @@ export class BetsService {
     const teamId = dto.teamIds[0];
     const jersey = dto.jerseys[0];
 
-    if (teamId < 1 || teamId > 25) {
-      throw new BadRequestException('Time deve estar entre 1 e 25');
-    }
-
     if (jersey < 0 || jersey > 99) {
       throw new BadRequestException('Número deve estar entre 0 e 99');
     }
 
-    // Validar que a dezena pertence ao time escolhido
-    const teamJerseys = this.gameConfig.getTeamJerseys(teamId);
-    if (!teamJerseys.includes(jersey)) {
+    const team = await this.prisma.team.findUnique({
+      where: { id: teamId },
+      select: { id: true, jerseys: true, name: true, deletedAt: true },
+    });
+
+    if (!team || team.deletedAt) {
+      throw new BadRequestException(`Time com ID ${teamId} não encontrado`);
+    }
+
+    if (!team.jerseys.includes(jersey)) {
       throw new BadRequestException(
-        `O número ${jersey} não pertence ao time ${teamId}. Números válidos: ${teamJerseys.join(', ')}`,
+        `O número ${jersey} não pertence ao time ${team.name}. Números válidos: ${team.jerseys.join(', ')}`,
       );
     }
   }
@@ -315,7 +320,7 @@ export class BetsService {
    */
   async findOne(id: string) {
     const bet = await this.prisma.bet.findUnique({
-      where: { id, deletedAt: null },
+      where: { id },
       include: {
         user: {
           select: {
@@ -344,7 +349,7 @@ export class BetsService {
       },
     });
 
-    if (!bet) {
+    if (!bet || bet.deletedAt) {
       throw new NotFoundException('Aposta não encontrada');
     }
 
@@ -464,13 +469,13 @@ export class BetsService {
    */
   async cancel(betId: string, userId: string) {
     const bet = await this.prisma.bet.findUnique({
-      where: { id: betId, deletedAt: null },
+      where: { id: betId },
       include: {
         draw: true,
       },
     });
 
-    if (!bet) {
+    if (!bet || bet.deletedAt) {
       throw new NotFoundException('Aposta não encontrada');
     }
 

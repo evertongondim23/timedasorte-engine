@@ -11,7 +11,7 @@ import {
   AdminService,
   UserPermissionService,
 } from './services';
-import { Prisma, Roles, UserStatus } from '@prisma/client';
+import { Prisma, Roles, UserStatus, KYCStatus } from '@prisma/client';
 import { UserFactory } from './factories/user.factory';
 
 @Injectable()
@@ -178,5 +178,41 @@ export class UsersService extends BaseUserService {
 
     console.log('✅ Perfil atualizado com sucesso');
     return updatedUser;
+  }
+
+  /**
+   * Retorna o status de KYC do usuário atual
+   */
+  async getMyKycStatus(userId: string) {
+    const user = await this.userRepository.buscarPrimeiro({ id: userId });
+    this.validarResultadoDaBusca(user, 'User', 'id', userId);
+
+    return {
+      kycStatus: user?.kycStatus ?? KYCStatus.PENDING,
+      updatedAt: (user as any)?.updatedAt ?? null,
+    };
+  }
+
+  /**
+   * Marca o usuário como \"em análise\" após envio de selfie com documento.
+   * O arquivo em si é gerenciado pelo módulo de arquivos (`/files/upload`).
+   */
+  async submitKycSelfie(
+    userId: string,
+    params: { fileId: string; documentType: string },
+  ) {
+    const user = await this.userRepository.buscarPrimeiro({ id: userId });
+    this.validarResultadoDaBusca(user, 'User', 'id', userId);
+
+    const updated = await this.userRepository.atualizar(
+      { id: userId },
+      {
+        kycStatus: KYCStatus.IN_REVIEW,
+      },
+    );
+
+    return {
+      kycStatus: updated.kycStatus,
+    };
   }
 }

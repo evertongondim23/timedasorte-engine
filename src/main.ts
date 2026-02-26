@@ -7,8 +7,8 @@ import { IoAdapter } from '@nestjs/platform-socket.io';
 import { runSeed } from 'prisma/seed';
 
 async function bootstrap() {
-  try { 
-    runSeed();
+  try {
+    await runSeed();
 
     const app = await NestFactory.create(AppModule, {
       // Importante: Habilitar CORS na criação do app para WebSockets
