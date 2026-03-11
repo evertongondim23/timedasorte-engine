@@ -120,7 +120,7 @@ npm run start:dev
 ### 3. Testar Upload via cURL
 ```bash
 # Upload de documento
-curl -X POST http://localhost:3020/files/upload \
+curl -X POST http://localhost:3000/files/upload \
   -H "Authorization: Bearer {seu-token}" \
   -F "file=@documento.pdf" \
   -F "type=DOCUMENT" \

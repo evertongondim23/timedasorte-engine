@@ -59,7 +59,7 @@ echo "   🔍 Testando backend..."
 if curl -s -f http://localhost:3000/health >/dev/null; then
     echo "   ✅ Backend respondendo na porta 3000"
 else
-    echo "   ❌ Backend não responde na porta 3020"
+    echo "   ❌ Backend não responde na porta 3000"
 fi
 
 # Testar frontend

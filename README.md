@@ -125,7 +125,7 @@ npm run prisma:seed
 npm run start:dev
 ```
 
-A API estará disponível em `http://localhost:3020`
+A API estará disponível em `http://localhost:3000`
 
 ### 5. **Executar com Docker (Produção)**
 
@@ -143,7 +143,7 @@ docker-compose logs -f api
 docker-compose down
 ```
 
-A API estará disponível em `http://localhost:3020`
+A API estará disponível em `http://localhost:3000`
 
 ### 6. **Credenciais Padrão**
 

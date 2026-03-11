@@ -110,13 +110,13 @@ Acesse: http://localhost:5555
 
 ```bash
 # Listar times (após servidor iniciado)
-curl http://localhost:3020/api/teams
+curl http://localhost:3000/api/teams
 
 # Buscar time por ID
-curl http://localhost:3020/api/teams/{id}
+curl http://localhost:3000/api/teams/{id}
 
 # Buscar por camisa
-curl http://localhost:3020/api/teams/jersey/10
+curl http://localhost:3000/api/teams/jersey/10
 ```
 
 ---

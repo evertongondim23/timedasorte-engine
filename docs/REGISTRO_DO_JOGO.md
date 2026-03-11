@@ -591,13 +591,13 @@ GET /api/health
 ### 1. Consultar configuração do jogo
 
 ```bash
-curl http://localhost:3020/api/game/config
+curl http://localhost:3000/api/game/config
 ```
 
 ### 2. Criar uma rodada (Admin)
 
 ```bash
-curl -X POST http://localhost:3020/api/rounds \
+curl -X POST http://localhost:3000/api/rounds \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -608,7 +608,7 @@ curl -X POST http://localhost:3020/api/rounds \
 ### 3. Fazer uma aposta (Usuário autenticado)
 
 ```bash
-curl -X POST http://localhost:3020/api/bets \
+curl -X POST http://localhost:3000/api/bets \
   -H "Authorization: Bearer YOUR_USER_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -622,7 +622,7 @@ curl -X POST http://localhost:3020/api/bets \
 ### 4. Publicar resultado (Admin)
 
 ```bash
-curl -X POST http://localhost:3020/api/rounds/cl9abc123xyz/publish \
+curl -X POST http://localhost:3000/api/rounds/cl9abc123xyz/publish \
   -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -634,7 +634,7 @@ curl -X POST http://localhost:3020/api/rounds/cl9abc123xyz/publish \
 ### 5. Consultar resultado
 
 ```bash
-curl http://localhost:3020/api/rounds/cl9abc123xyz/result
+curl http://localhost:3000/api/rounds/cl9abc123xyz/result
 ```
 
 ---

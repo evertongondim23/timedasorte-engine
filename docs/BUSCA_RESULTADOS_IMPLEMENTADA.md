@@ -56,7 +56,7 @@ const published = await roundsService.fetchAndPublishResult(roundId);
 Busca resultado sem publicar (para verificação):
 
 ```bash
-curl -X POST http://localhost:3020/api/admin/rounds/{id}/fetch-result?provider=OJOGODOBICHO \
+curl -X POST http://localhost:3000/api/admin/rounds/{id}/fetch-result?provider=OJOGODOBICHO \
   -H "Authorization: Bearer {token}"
 ```
 
@@ -79,7 +79,7 @@ curl -X POST http://localhost:3020/api/admin/rounds/{id}/fetch-result?provider=O
 Busca e publica resultado automaticamente:
 
 ```bash
-curl -X POST http://localhost:3020/api/admin/rounds/{id}/fetch-and-publish?provider=OJOGODOBICHO \
+curl -X POST http://localhost:3000/api/admin/rounds/{id}/fetch-and-publish?provider=OJOGODOBICHO \
   -H "Authorization: Bearer {token}"
 ```
 

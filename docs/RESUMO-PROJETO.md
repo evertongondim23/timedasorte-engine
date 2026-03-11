@@ -256,9 +256,9 @@ npm run start:dev
 ### 4. Acessar API
 
 ```
-http://localhost:3020/health
-http://localhost:3020/api/users (requer auth)
-http://localhost:3020/metrics
+http://localhost:3000/health
+http://localhost:3000/api/users (requer auth)
+http://localhost:3000/metrics
 ```
 
 ---
