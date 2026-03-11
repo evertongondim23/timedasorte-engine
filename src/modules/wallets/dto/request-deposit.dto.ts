@@ -1,4 +1,13 @@
-import { IsNumber, IsPositive, IsString, IsOptional, Min } from 'class-validator';
+import {
+  IsNumber,
+  IsPositive,
+  IsString,
+  IsOptional,
+  Min,
+  IsIn,
+} from 'class-validator';
+
+export type DepositMethod = 'pix' | 'boleto' | 'credit_card';
 
 export class RequestDepositDto {
   @IsNumber()
@@ -9,4 +18,11 @@ export class RequestDepositDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  /** Forma de pagamento: pix (padrão), boleto ou credit_card */
+  @IsOptional()
+  @IsIn(['pix', 'boleto', 'credit_card'], {
+    message: 'method deve ser pix, boleto ou credit_card',
+  })
+  method?: DepositMethod;
 }

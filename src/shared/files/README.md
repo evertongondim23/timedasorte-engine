@@ -39,7 +39,7 @@ src/modules/files/
 # MinIO Configuration
 MINIO_ROOT_USER=admin
 MINIO_ROOT_PASSWORD=password123
-MINIO_ENDPOINT=http://localhost:9000
+MINIO_ENDPOINT=http://localhost:9020
 MINIO_USE_SSL=false
 ```
 
@@ -49,8 +49,8 @@ O MinIO já está configurado no `docker-compose.yml`:
 minio:
   image: minio/minio:latest
   ports:
-    - '9000:9000'  # API
-    - '9001:9001'  # Console web
+    - '9020:9000'  # API
+    - '9021:9001'  # Console web
   environment:
     MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
     MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-password123}
@@ -113,14 +113,14 @@ npm run start:dev
 ```
 
 ### 2. Acessar Console MinIO
-- **URL**: http://localhost:9001
+- **URL**: http://localhost:9021
 - **Login**: admin
 - **Senha**: password123
 
 ### 3. Testar Upload via cURL
 ```bash
 # Upload de documento
-curl -X POST http://localhost:3000/files/upload \
+curl -X POST http://localhost:3020/files/upload \
   -H "Authorization: Bearer {seu-token}" \
   -F "file=@documento.pdf" \
   -F "type=DOCUMENT" \

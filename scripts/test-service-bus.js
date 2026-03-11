@@ -4,7 +4,7 @@
  * Este script testa os endpoints do Service Bus no backend NestJS
  */
 
-const BASE_URL = 'http://localhost:3000'; // Ajuste conforme sua porta
+const BASE_URL = 'http://localhost:3100'; // Ajuste conforme sua porta
 
 /**
  * Testa a conectividade com o Service Bus

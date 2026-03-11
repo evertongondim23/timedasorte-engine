@@ -21,9 +21,9 @@ services:
           memory: 64M
           cpus: '0.1'
     networks:
-      - app-net
+      - app-net-time-da-sorte
 networks:
-  app-net:
+  app-net-time-da-sorte:
     external: true
 
 

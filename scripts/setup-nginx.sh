@@ -25,14 +25,14 @@ else
     echo "✅ Certificado SSL já existe"
 fi
 
-# Verificar se a rede app-net existe
-echo "🔗 Verificando rede app-net..."
-if ! docker network ls | grep -q "app-net"; then
-    echo "📡 Criando rede app-net..."
-    docker network create --driver bridge app-net
-    echo "✅ Rede app-net criada!"
+# Verificar se a rede app-net-time-da-sorte existe
+echo "🔗 Verificando rede app-net-time-da-sorte..."
+if ! docker network ls | grep -q "app-net-time-da-sorte"; then
+    echo "📡 Criando rede app-net-time-da-sorte..."
+    docker network create --driver bridge app-net-time-da-sorte
+    echo "✅ Rede app-net-time-da-sorte criada!"
 else
-    echo "✅ Rede app-net já existe"
+    echo "✅ Rede app-net-time-da-sorte já existe"
 fi
 
 # Parar containers existentes
@@ -59,15 +59,15 @@ echo "   🔍 Testando backend..."
 if curl -s -f http://localhost:3000/health >/dev/null; then
     echo "   ✅ Backend respondendo na porta 3000"
 else
-    echo "   ❌ Backend não responde na porta 3000"
+    echo "   ❌ Backend não responde na porta 3020"
 fi
 
 # Testar frontend
 echo "   🔍 Testando frontend..."
-if curl -s -f http://localhost:4200 >/dev/null; then
-    echo "   ✅ Frontend respondendo na porta 4200"
+if curl -s -f http://localhost:4220 >/dev/null; then
+    echo "   ✅ Frontend respondendo na porta 4220"
 else
-    echo "   ❌ Frontend não responde na porta 4200"
+    echo "   ❌ Frontend não responde na porta 4220"
 fi
 
 # Testar nginx
@@ -93,8 +93,8 @@ echo "📋 URLs de acesso:"
 echo "   🌐 Frontend: https://localhost (via nginx)"
 echo "   🔌 Backend: http://localhost:3000 (direto)"
 echo "   📡 API: https://localhost/api/* (via nginx)"
-echo "   🗄️ Database: localhost:5432"
-echo "   📁 MinIO: http://localhost:9000"
+echo "   🗄️ Database: localhost:3200"
+echo "   📁 MinIO: http://localhost:3300"
 echo ""
 echo "🔧 Para ver logs:"
 echo "   docker compose -f docker/docker-compose.unified.yml logs -f nginx"

@@ -124,19 +124,19 @@ docker exec -i aumigopet-postgres psql -U postgres aumigopet < backup.sql
 ## 🌐 Acessos
 
 ### **Serviços disponíveis**
-- **Backend API**: http://localhost:3000
-- **MinIO API**: http://localhost:9000
-- **MinIO Console**: http://localhost:9001 (admin/password123)
-- **PostgreSQL**: localhost:5432
-- **Redis**: localhost:6379
+- **Backend API**: http://localhost:3020
+- **MinIO API**: http://localhost:9020
+- **MinIO Console**: http://localhost:9021 (admin/password123)
+- **PostgreSQL**: localhost:3200
+- **Redis**: localhost:3900
 
 ### **Health Checks**
 ```bash
 # Backend
-curl http://localhost:3000/health
+curl http://localhost:3020/health
 
 # MinIO
-curl http://localhost:9000/minio/health/live
+curl http://localhost:9020/minio/health/live
 ```
 
 ## 🚀 Deploy em Produção
@@ -168,8 +168,8 @@ nano .env
 echo "🚀 Iniciando ambiente de desenvolvimento..."
 docker-compose -f docker/docker-compose.yml up -d
 echo "✅ Ambiente iniciado!"
-echo "📊 Backend: http://localhost:3000"
-echo "📁 MinIO: http://localhost:9001"
+echo "📊 Backend: http://localhost:3020"
+echo "📁 MinIO: http://localhost:9021"
 ```
 
 ### **Script de parada**
@@ -206,7 +206,7 @@ echo "✅ Ambiente parado!"
 ### **Problemas comuns**
 ```bash
 # Porta já em uso
-lsof -ti:3000 | xargs kill -9
+lsof -ti:3020 | xargs kill -9
 
 # Container não inicia
 docker-compose -f docker/docker-compose.yml logs [servico]

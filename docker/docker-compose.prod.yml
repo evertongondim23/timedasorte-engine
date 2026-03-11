@@ -30,7 +30,7 @@ services:
           memory: 256M
           cpus: '0.2'
     networks:
-      - app-net
+      - app-net-time-da-sorte
 
   # Database PostgreSQL (usar rede externa)
   db:
@@ -43,7 +43,7 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
     ports:
-      - '5432:5432'
+      - '3200:5432'
     volumes:
       - jogodasorte-engine-lobocode_postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
@@ -63,7 +63,7 @@ services:
           memory: 256M
           cpus: '0.1'
     networks:
-      - app-net
+      - app-net-time-da-sorte
 
   # Redis Cache (usar rede externa)
   redis:
@@ -81,7 +81,7 @@ services:
           memory: 64M
           cpus: '0.05'
     networks:
-      - app-net
+      - app-net-time-da-sorte
 
 volumes:
   jogodasorte-engine-lobocode_postgres_data:
@@ -89,7 +89,7 @@ volumes:
   redis_data:
 
 networks:
-  app-net:
+  app-net-time-da-sorte:
     external: true
 
 

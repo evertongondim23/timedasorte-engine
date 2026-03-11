@@ -24,8 +24,7 @@ async function bootstrap() {
       origin: [
         'https://appjogo-da-sorte.com',
         'http://31.97.166.94',           // Nginx proxy
-        'http://localhost:3005',          // Para desenvolvimento local
-        'http://localhost:3006',          // Para desenvolvimento local
+        'http://localhost:3100',          // Para desenvolvimento local
       ],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],

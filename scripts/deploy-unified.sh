@@ -9,13 +9,13 @@ if [ ! -f "docker/docker-compose.unified.yml" ]; then
 fi
 
 # Criar rede se não existir
-echo "🔧 Verificando rede app-net..."
-if ! docker network ls | grep -q "app-net"; then
-    echo "📡 Criando rede app-net..."
-    docker network create --driver bridge app-net
-    echo "✅ Rede app-net criada com sucesso!"
+echo "🔧 Verificando rede app-net-time-da-sorte..."
+if ! docker network ls | grep -q "app-net-time-da-sorte"; then
+    echo "📡 Criando rede app-net-time-da-sorte..."
+    docker network create --driver bridge app-net-time-da-sorte
+    echo "✅ Rede app-net-time-da-sorte criada com sucesso!"
 else
-    echo "✅ Rede app-net já existe"
+    echo "✅ Rede app-net-time-da-sorte já existe"
 fi
 
 # Parar todos os containers existentes

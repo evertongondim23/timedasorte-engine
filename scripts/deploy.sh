@@ -17,7 +17,7 @@ show_help() {
     echo "Uso: $0 [comando]"
     echo ""
     echo "Comandos disponíveis:"
-    echo "  network     - Gerenciar rede app-net"
+    echo "  network     - Gerenciar rede app-net-time-da-sorte"
     echo "  infra       - Deploy da infraestrutura (Nginx)"
     echo "  backend     - Deploy do backend apenas"
     echo "  unified     - Deploy completo unificado"
@@ -73,9 +73,9 @@ start_database() {
     echo -e "${BLUE}🗄️ Iniciando Database - Jogo da Sorte${NC}"
     
     # Criar rede se não existir
-    if ! docker network ls | grep -q "app-net"; then
-        echo "📡 Criando rede app-net..."
-        docker network create --driver bridge app-net
+    if ! docker network ls | grep -q "app-net-time-da-sorte"; then
+        echo "📡 Criando rede app-net-time-da-sorte..."
+        docker network create --driver bridge app-net-time-da-sorte
     fi
     
     docker compose -f docker/docker-compose.database.yml up -d
@@ -87,9 +87,9 @@ start_monitoring() {
     echo -e "${BLUE}📊 Iniciando Monitoramento - Jogo da Sorte${NC}"
     
     # Criar rede se não existir
-    if ! docker network ls | grep -q "app-net"; then
-        echo "📡 Criando rede app-net..."
-        docker network create --driver bridge app-net
+    if ! docker network ls | grep -q "app-net-time-da-sorte"; then
+        echo "📡 Criando rede app-net-time-da-sorte..."
+        docker network create --driver bridge app-net-time-da-sorte
     fi
     
     docker compose -f docker/docker-compose.monitoring.yml up -d
@@ -101,9 +101,9 @@ start_minio() {
     echo -e "${BLUE}📁 Iniciando MinIO - Jogo da Sorte${NC}"
     
     # Criar rede se não existir
-    if ! docker network ls | grep -q "app-net"; then
-        echo "📡 Criando rede app-net..."
-        docker network create --driver bridge app-net
+    if ! docker network ls | grep -q "app-net-time-da-sorte"; then
+        echo "📡 Criando rede app-net-time-da-sorte..."
+        docker network create --driver bridge app-net-time-da-sorte
     fi
     
     docker compose -f docker/docker-compose.minio.yml up -d

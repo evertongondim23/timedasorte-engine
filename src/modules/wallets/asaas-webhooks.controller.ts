@@ -1,26 +1,47 @@
 import {
   Body,
   Controller,
+  Headers,
   HttpCode,
   HttpStatus,
   Logger,
   Post,
+  Get,
+  UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { WalletsService } from './wallets.service';
+
+const ASAAS_WEBHOOK_TOKEN_HEADER = 'asaas-access-token';
 
 @Controller('asaas/webhooks')
 export class AsaasWebhooksController {
   private readonly logger = new Logger(AsaasWebhooksController.name);
 
-  constructor(private readonly walletsService: WalletsService) {}
+  constructor(
+    private readonly walletsService: WalletsService,
+    private readonly config: ConfigService,
+  ) {}
 
   /**
    * Webhook de pagamentos do Asaas.
    * Configure no painel do Asaas para enviar eventos de pagamento para esta URL.
+   * Se ASAAS_WEBHOOK_TOKEN estiver definido no .env, o header asaas-access-token é validado.
    */
   @Post('payments')
   @HttpCode(HttpStatus.OK)
-  async handlePayment(@Body() body: any) {
+  async handlePayment(
+    @Headers(ASAAS_WEBHOOK_TOKEN_HEADER) accessToken: string | undefined,
+    @Body() body: any,
+  ) {
+    const expectedToken = this.config.get<string>('ASAAS_WEBHOOK_TOKEN');
+    if (expectedToken && expectedToken.length > 0) {
+      if (!accessToken || accessToken !== expectedToken) {
+        this.logger.warn('Webhook Asaas rejeitado: token inválido ou ausente');
+        throw new UnauthorizedException('Token de webhook inválido');
+      }
+    }
+
     const event = body?.event as string | undefined;
     const payment = body?.payment as
       | {
@@ -51,9 +72,10 @@ export class AsaasWebhooksController {
       return { received: true, ignored: true };
     }
 
-    if (payment.billingType !== 'PIX') {
+    const allowedBillingTypes = ['PIX', 'BOLETO', 'CREDIT_CARD'];
+    if (!allowedBillingTypes.includes(payment.billingType)) {
       this.logger.log(
-        `Webhook Asaas ignorado (não é PIX): billingType=${payment.billingType}, paymentId=${payment.id}`,
+        `Webhook Asaas ignorado (tipo não tratado): billingType=${payment.billingType}, paymentId=${payment.id}`,
       );
       return { received: true, ignored: true };
     }

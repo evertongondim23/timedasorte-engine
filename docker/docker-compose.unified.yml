@@ -24,14 +24,14 @@ services:
           memory: 64M
           cpus: '0.1'
     networks:
-      - app-net
+      - app-net-time-da-sorte
 
   # Frontend Angular
   frontend:
     image: jogodasorte-app-lobocode-frontend
     container_name: frontend
     ports:
-      - '4200:80'
+      - '4220:80'
     restart: unless-stopped
     deploy:
       resources:
@@ -42,7 +42,7 @@ services:
           memory: 128M
           cpus: '0.1'
     networks:
-      - app-net
+      - app-net-time-da-sorte
 
   # Migration Service (executa ANTES do backend)
   migration:
@@ -65,7 +65,7 @@ services:
         condition: service_started
     restart: "no"
     networks:
-      - app-net
+      - app-net-time-da-sorte
 
   # Backend NestJS
   backend:
@@ -99,14 +99,14 @@ services:
           memory: 256M
           cpus: '0.2'
     networks:
-      - app-net
+      - app-net-time-da-sorte
 
   # Database PostgreSQL
   db:
     image: postgres:16.8-alpine3.20
     container_name: jogodasorte-db
     ports:
-      - '5432:5432'  # Expor PostgreSQL externamente
+      - '3200:5432'  # Expor PostgreSQL externamente
     env_file:
       - .env
     environment:
@@ -132,7 +132,7 @@ services:
           memory: 256M
           cpus: '0.1'
     networks:
-      - app-net
+      - app-net-time-da-sorte
 
   # Redis Cache
   redis:
@@ -150,7 +150,7 @@ services:
           memory: 64M
           cpus: '0.05'
     networks:
-      - app-net
+      - app-net-time-da-sorte
 
   # MinIO - Armazenamento de Arquivos
   minio:
@@ -159,8 +159,8 @@ services:
     env_file:
       - .env
     ports:
-      - '9000:9000'  # API
-      - '9001:9001'  # Console web
+      - '3300:9000'  # API
+      - '3301:9001'  # Console web
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-password123}
@@ -182,7 +182,7 @@ services:
           cpus: '0.1'
     restart: unless-stopped
     networks:
-      - app-net
+      - app-net-time-da-sorte
 
 volumes:
   jogodasorte-engine-lobocode_postgres_data:
@@ -191,5 +191,5 @@ volumes:
   minio_data:
 
 networks:
-  app-net:
+  app-net-time-da-sorte:
     external: true

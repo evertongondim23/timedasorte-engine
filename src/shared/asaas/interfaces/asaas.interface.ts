@@ -14,6 +14,9 @@ export interface AsaasPayment {
   dateCreated: string;
   customer: string;
   paymentLink?: string;
+  invoiceUrl?: string;
+  bankSlipUrl?: string;
+  invoiceNumber?: string;
   value: number;
   netValue?: number;
   billingType: 'PIX' | 'BOLETO' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'UNDEFINED';

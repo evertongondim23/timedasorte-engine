@@ -134,37 +134,37 @@ export abstract class UniversalController<
       // Contador total de operações
       total_operations: {
         query: `sum(jogo-da-sorte_entity_operations_total{entity="${entity}"})`,
-        prometheus_url: `http://localhost:9090/api/v1/query?query=sum(jogo-da-sorte_entity_operations_total{entity="${entity}"})`,
+        prometheus_url: `http://localhost:9110/api/v1/query?query=sum(jogo-da-sorte_entity_operations_total{entity="${entity}"})`,
       },
 
       // Taxa de operações por minuto
       operations_rate: {
         query: `rate(jogo-da-sorte_entity_operations_total{entity="${entity}"}${timeRange})`,
-        prometheus_url: `http://localhost:9090/api/v1/query?query=rate(jogo-da-sorte_entity_operations_total{entity="${entity}"}${timeRange})`,
+        prometheus_url: `http://localhost:9110/api/v1/query?query=rate(jogo-da-sorte_entity_operations_total{entity="${entity}"}${timeRange})`,
       },
 
       // Duração média das operações
       avg_duration: {
         query: `rate(jogo-da-sorte_operation_duration_seconds_sum{entity="${entity}"}${timeRange}) / rate(jogo-da-sorte_operation_duration_seconds_count{entity="${entity}"}${timeRange})`,
-        prometheus_url: `http://localhost:9090/api/v1/query?query=rate(jogo-da-sorte_operation_duration_seconds_sum{entity="${entity}"}${timeRange})/rate(jogo-da-sorte_operation_duration_seconds_count{entity="${entity}"}${timeRange})`,
+        prometheus_url: `http://localhost:9110/api/v1/query?query=rate(jogo-da-sorte_operation_duration_seconds_sum{entity="${entity}"}${timeRange})/rate(jogo-da-sorte_operation_duration_seconds_count{entity="${entity}"}${timeRange})`,
       },
 
       // Operações por status
       by_status: {
         query: `sum(jogo-da-sorte_entity_operations_total{entity="${entity}"}) by (status)`,
-        prometheus_url: `http://localhost:9090/api/v1/query?query=sum(jogo-da-sorte_entity_operations_total{entity="${entity}"}) by (status)`,
+        prometheus_url: `http://localhost:9110/api/v1/query?query=sum(jogo-da-sorte_entity_operations_total{entity="${entity}"}) by (status)`,
       },
 
       // Operações por ação
       by_action: {
         query: `sum(jogo-da-sorte_entity_operations_total{entity="${entity}"}) by (action)`,
-        prometheus_url: `http://localhost:9090/api/v1/query?query=sum(jogo-da-sorte_entity_operations_total{entity="${entity}"}) by (action)`,
+        prometheus_url: `http://localhost:9110/api/v1/query?query=sum(jogo-da-sorte_entity_operations_total{entity="${entity}"}) by (action)`,
       },
 
       info: {
         message: 'Métricas agora vêm do Prometheus',
-        grafana_dashboard: 'http://localhost:3001',
-        prometheus_ui: 'http://localhost:9090',
+        grafana_dashboard: 'http://localhost:3021',
+        prometheus_ui: 'http://localhost:9110',
       },
     };
   }

@@ -20,8 +20,8 @@ docker compose -f docker/docker-compose.monitoring.yml ps
 
 echo ""
 echo "✅ Monitoramento iniciado!"
-echo "📈 Prometheus disponível em: http://localhost:9090"
-echo "📊 Grafana disponível em: http://localhost:3001"
+echo "📈 Prometheus disponível em: http://localhost:9110"
+echo "📊 Grafana disponível em: http://localhost:3021"
 echo "   - Usuário: admin"
 echo "   - Senha: admin"
 echo ""

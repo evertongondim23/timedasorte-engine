@@ -9,7 +9,7 @@ services:
     container_name: jogo-sorte-db
     restart: unless-stopped
     ports:
-      - '5432:5432'
+      - '5452:5432'
     environment:
       POSTGRES_USER: ${DATABASE_USER:-postgres}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
@@ -34,14 +34,14 @@ services:
     container_name: jogo-sorte-api
     restart: unless-stopped
     ports:
-      - '${PORT:-3000}:${PORT:-3000}'
+      - '${PORT:-3020}:${PORT:-3020}'
     environment:
       # Database
       DATABASE_URL: postgresql://${DATABASE_USER:-postgres}:${DATABASE_PASSWORD:-postgres}@postgres:5432/${DATABASE_NAME:-jogo_da_sorte}?schema=public
       
       # Application
       NODE_ENV: ${NODE_ENV:-production}
-      PORT: ${PORT:-3000}
+      PORT: ${PORT:-3020}
       
       # JWT
       JWT_SECRET: ${JWT_SECRET}

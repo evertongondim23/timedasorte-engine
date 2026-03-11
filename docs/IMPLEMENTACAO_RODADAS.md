@@ -25,6 +25,7 @@ Serviço responsável por:
 - **Buscar rodadas disponíveis** para o frontend
 
 **Grade Fixa (Seg-Sáb):**
+
 ```typescript
 PTM: 11:00
 PPT: 14:00
@@ -51,6 +52,7 @@ Provider para buscar resultados do site:
 - **Validação:** Garante 5 milhares e 5 dezenas por categoria
 
 **Formato esperado:**
+
 ```
 | PPT | PTM     | PT      | PTV     | PTN     | COR    |
 | 1   | 0199-25 | 4681-21 | 6233-9  | 8419-5  | 0000-0 |
@@ -65,7 +67,9 @@ Provider para buscar resultados do site:
 ### 4. **Endpoints Atualizados**
 
 #### **GET /api/rounds/available** (NOVO)
+
 Retorna:
+
 ```json
 {
   "available": {
@@ -91,6 +95,7 @@ Retorna:
 ```
 
 #### **GET /api/rounds/next** (ATUALIZADO)
+
 Agora usa `RoundScheduleService.getNextAvailableRound()`
 
 ---
@@ -114,12 +119,14 @@ SCHEDULED → OPEN → CLOSED → PENDING_RESULT → PUBLISHED
 ## 📋 Próximos Passos
 
 ### **1. Instalar Dependências**
+
 ```bash
 npm install cheerio
 npm install --save-dev @types/cheerio
 ```
 
 ### **2. Aplicar Migration**
+
 ```bash
 npx prisma migrate deploy
 # ou
@@ -127,12 +134,15 @@ npx prisma migrate dev
 ```
 
 ### **3. Gerar Rodadas Iniciais**
+
 Criar um script ou endpoint admin para gerar rodadas:
+
 ```typescript
 await scheduleService.generateRoundsForNextDays(30); // Próximos 30 dias
 ```
 
 ### **4. Cron Job para Atualizar Status**
+
 ```typescript
 @Cron('*/5 * * * *') // A cada 5 minutos
 async updateRoundsStatus() {
@@ -141,6 +151,7 @@ async updateRoundsStatus() {
 ```
 
 ### **5. Integrar Provider no RoundsService**
+
 Atualizar `publishResult()` para usar `OJogoDoBichoProvider` quando `source === OFFICIAL`
 
 ---
@@ -148,6 +159,7 @@ Atualizar `publishResult()` para usar `OJogoDoBichoProvider` quando `source === 
 ## 🎯 Como Usar no Frontend
 
 ### **Buscar Rodada Disponível:**
+
 ```typescript
 const { available, nextClosed, nextScheduled } = await api.get('/rounds/available');
 
@@ -161,6 +173,7 @@ if (available) {
 ```
 
 ### **Exibir Categoria:**
+
 ```typescript
 const categoryLabels = {
   PTM: 'Manhã',
@@ -189,3 +202,4 @@ const categoryLabels = {
 - **COR**: 00:30 do próximo dia (meia-noite e meia)
 - **Cutoff**: Sempre 30 minutos antes do `scheduledAt`
 - **Status**: Atualizado automaticamente via `updateRoundsStatus()`
+

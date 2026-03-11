@@ -24,14 +24,14 @@ services:
           cpus: '0.1'
     restart: unless-stopped
     networks:
-      - app-net
+      - app-net-time-da-sorte
 
   # Grafana Dashboard
   grafana:
     image: grafana/grafana:latest
     container_name: jogodasorte-grafana
     ports:
-      - '3001:3000'
+      - '3021:3000'
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
@@ -50,12 +50,12 @@ services:
           cpus: '0.1'
     restart: unless-stopped
     networks:
-      - app-net
+      - app-net-time-da-sorte
 
 volumes:
   prometheus_data:
   grafana_data:
 
 networks:
-  app-net:
+  app-net-time-da-sorte:
     external: true

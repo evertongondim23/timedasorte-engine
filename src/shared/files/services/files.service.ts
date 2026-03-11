@@ -28,11 +28,14 @@ export class FilesService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {
+    const minioEndpoint =
+      this.configService.get<string>('MINIO_ENDPOINT', 'http://localhost:3300');
+    const parsed = new URL(minioEndpoint);
+
     this.minioClient = new Minio.Client({
-      endPoint: 'localhost',
-      port: 9000,
-      useSSL: false,
-      // useSSL: this.configService.get<boolean>('MINIO_USE_SSL', false),
+      endPoint: parsed.hostname,
+      port: parsed.port ? Number(parsed.port) : 3300,
+      useSSL: parsed.protocol === 'https:',
       accessKey: this.configService.get<string>('MINIO_ROOT_USER', 'admin'),
       secretKey: this.configService.get<string>('MINIO_ROOT_PASSWORD', 'password123'),
     });
@@ -93,7 +96,10 @@ export class FilesService {
       );
 
       // URL pública
-      const minioEndpoint = this.configService.get<string>('MINIO_ENDPOINT', 'http://localhost:9000'); 
+      const minioEndpoint = this.configService.get<string>(
+        'MINIO_ENDPOINT',
+        'http://localhost:3300',
+      );
       const url = `${minioEndpoint}/${this.bucketName}/${fullPath}`;
 
       // Salvar no banco

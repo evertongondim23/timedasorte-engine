@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Script para gerenciar a rede app-net do Jogo da Sorte
+# Script para gerenciar a rede app-net-time-da-sorte do Jogo da Sorte
 # Uso: ./scripts/network-manager.sh [create|remove|status]
 
-NETWORK_NAME="app-net"
+NETWORK_NAME="app-net-time-da-sorte"
 NETWORK_DRIVER="bridge"
 
 # Cores para output
@@ -20,8 +20,8 @@ show_help() {
     echo "Uso: $0 [comando]"
     echo ""
     echo "Comandos disponíveis:"
-    echo "  create   - Criar a rede app-net"
-    echo "  remove   - Remover a rede app-net"
+    echo "  create   - Criar a rede app-net-time-da-sorte"
+    echo "  remove   - Remover a rede app-net-time-da-sorte"
     echo "  status   - Verificar status da rede"
     echo "  help     - Exibir esta ajuda"
     echo ""

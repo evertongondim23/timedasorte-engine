@@ -11,6 +11,7 @@
 - ✅ Validação de resultado antes de retornar
 
 #### **Melhorias:**
+
 ```typescript
 // Antes: Retornava qualquer resultado encontrado
 fetchResult(scheduledAt: Date)
@@ -33,6 +34,7 @@ fetchResult(scheduledAt: Date, category?: RoundCategory)
 
 #### **`fetchResultFromProvider(id, providerName?)`**
 Busca resultado do provider externo sem publicar:
+
 ```typescript
 const result = await roundsService.fetchResultFromProvider(roundId, 'OJOGODOBICHO');
 // Retorna: { success: true, data: { milhares: [...], ... } }
@@ -40,6 +42,7 @@ const result = await roundsService.fetchResultFromProvider(roundId, 'OJOGODOBICH
 
 #### **`fetchAndPublishResult(id, providerName?)`**
 Busca e publica resultado automaticamente:
+
 ```typescript
 const published = await roundsService.fetchAndPublishResult(roundId);
 // Busca resultado, valida e publica automaticamente
@@ -51,12 +54,14 @@ const published = await roundsService.fetchAndPublishResult(roundId);
 
 #### **POST /api/admin/rounds/:id/fetch-result**
 Busca resultado sem publicar (para verificação):
+
 ```bash
-curl -X POST http://localhost:3000/api/admin/rounds/{id}/fetch-result?provider=OJOGODOBICHO \
+curl -X POST http://localhost:3020/api/admin/rounds/{id}/fetch-result?provider=OJOGODOBICHO \
   -H "Authorization: Bearer {token}"
 ```
 
 **Resposta:**
+
 ```json
 {
   "success": true,
@@ -72,12 +77,14 @@ curl -X POST http://localhost:3000/api/admin/rounds/{id}/fetch-result?provider=O
 
 #### **POST /api/admin/rounds/:id/fetch-and-publish**
 Busca e publica resultado automaticamente:
+
 ```bash
-curl -X POST http://localhost:3000/api/admin/rounds/{id}/fetch-and-publish?provider=OJOGODOBICHO \
+curl -X POST http://localhost:3020/api/admin/rounds/{id}/fetch-and-publish?provider=OJOGODOBICHO \
   -H "Authorization: Bearer {token}"
 ```
 
 **Resposta:**
+
 ```json
 {
   "id": "...",
@@ -107,6 +114,7 @@ curl -X POST http://localhost:3000/api/admin/rounds/{id}/fetch-and-publish?provi
 6. Processa até 5 rodadas por execução
 
 **Logs:**
+
 ```
 🔍 Buscando resultados automaticamente...
 📋 Encontradas 2 rodada(s) aguardando resultado
@@ -144,11 +152,13 @@ curl -X POST http://localhost:3000/api/admin/rounds/{id}/fetch-and-publish?provi
 ### **1. Busca Manual (Admin)**
 
 #### **Apenas Buscar (sem publicar):**
+
 ```bash
 POST /api/admin/rounds/{id}/fetch-result
 ```
 
 #### **Buscar e Publicar:**
+
 ```bash
 POST /api/admin/rounds/{id}/fetch-and-publish
 ```
@@ -157,7 +167,7 @@ POST /api/admin/rounds/{id}/fetch-and-publish
 
 O cron job executa automaticamente a cada 2 minutos. Não é necessário fazer nada manualmente.
 
-**Para desabilitar temporariamente:**
+**Para desabilitar temporariamente:**  
 Comente o método `handleFetchResults()` no `RoundsSchedulerService`.
 
 ---
@@ -165,6 +175,7 @@ Comente o método `handleFetchResults()` no `RoundsSchedulerService`.
 ## 📊 Estrutura de Dados
 
 ### **DrawResultData:**
+
 ```typescript
 {
   milhares: number[];        // [199, 4681, 6233, 8419, 0]
@@ -233,3 +244,4 @@ Comente o método `handleFetchResults()` no `RoundsSchedulerService`.
 ---
 
 **Status:** ✅ Implementação completa e funcional!
+

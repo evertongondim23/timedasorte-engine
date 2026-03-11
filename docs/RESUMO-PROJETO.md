@@ -256,9 +256,9 @@ npm run start:dev
 ### 4. Acessar API
 
 ```
-http://localhost:3000/health
-http://localhost:3000/api/users (requer auth)
-http://localhost:3000/metrics
+http://localhost:3020/health
+http://localhost:3020/api/users (requer auth)
+http://localhost:3020/metrics
 ```
 
 ---
@@ -493,3 +493,4 @@ _Baseado em: aumigopet-engine-lobocode_
 _Criado em: Janeiro 2026_  
 _Versão: 0.0.1-alpha_  
 _Status: 🟢 Ready to Rock!_
+

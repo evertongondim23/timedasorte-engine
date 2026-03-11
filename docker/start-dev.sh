@@ -31,9 +31,9 @@ else
 fi
 
 # MinIO
-if curl -s http://localhost:9000/minio/health/live > /dev/null; then
-    echo "✅ MinIO API: http://localhost:9000"
-    echo "✅ MinIO Console: http://localhost:9001 (admin/password123)"
+if curl -s http://localhost:3300/minio/health/live > /dev/null; then
+    echo "✅ MinIO API: http://localhost:3300"
+    echo "✅ MinIO Console: http://localhost:3301 (admin/password123)"
 else
     echo "❌ MinIO: Não respondeu"
 fi

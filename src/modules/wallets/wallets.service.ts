@@ -265,33 +265,15 @@ export class WalletsService {
     paymentLink?: string;
     message: string;
   }> {
-    if (!this.asaas.isEnabled()) {
-      throw new BadRequestException(
-        "Depósito via PIX temporariamente indisponível. Configure a integração Asaas.",
-      );
-    }
-    const customerId = this.asaas.getCustomerId();
-    if (!customerId) {
-      throw new BadRequestException(
-        "Depósito via PIX não configurado (ASAAS_CUSTOMER_ID). Contate o suporte.",
-      );
-    }
-    if (amount <= 0) {
-      throw new BadRequestException("Valor do depósito deve ser positivo.");
-    }
-    const minDeposit = 5;
-    if (amount < minDeposit) {
-      throw new BadRequestException(
-        `Valor mínimo para depósito é R$ ${minDeposit.toFixed(2)}`,
-      );
-    }
+    this.ensureAsaasDepositConfig();
+    this.validateDepositAmount(amount);
 
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 1);
     const dueDateStr = dueDate.toISOString().slice(0, 10);
 
     const payment = await this.asaas.createPayment({
-      customer: customerId,
+      customer: this.asaas.getCustomerId()!,
       billingType: "PIX",
       value: amount,
       dueDate: dueDateStr,
@@ -328,6 +310,141 @@ export class WalletsService {
       message:
         "Pague o PIX usando o QR Code ou copie e cole o código. O saldo será creditado após confirmação.",
     };
+  }
+
+  /**
+   * Solicita depósito via Boleto (Asaas). Retorna link do boleto e da fatura.
+   * O crédito na carteira é feito via webhook quando o pagamento for confirmado.
+   */
+  async requestDepositBoleto(
+    userId: string,
+    amount: number,
+    description?: string,
+  ): Promise<{
+    paymentId: string;
+    value: number;
+    dueDate: string;
+    bankSlipUrl?: string;
+    invoiceUrl?: string;
+    invoiceNumber?: string;
+    message: string;
+  }> {
+    this.ensureAsaasDepositConfig();
+    this.validateDepositAmount(amount);
+
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 3); // boleto: 3 dias úteis
+    const dueDateStr = dueDate.toISOString().slice(0, 10);
+
+    const payment = await this.asaas.createPayment({
+      customer: this.asaas.getCustomerId()!,
+      billingType: "BOLETO",
+      value: amount,
+      dueDate: dueDateStr,
+      description:
+        description ??
+        `Depósito Jogo da Sorte - Usuário ${userId.slice(0, 8)}...`,
+      externalReference: userId,
+    });
+
+    if (!payment) {
+      throw new BadRequestException(
+        "Não foi possível gerar o boleto. Tente novamente.",
+      );
+    }
+
+    this.logger.log(
+      `Cobrança Boleto criada: payment=${payment.id}, user=${userId}, value=${amount}`,
+    );
+
+    return {
+      paymentId: payment.id,
+      value: payment.value,
+      dueDate: payment.dueDate,
+      bankSlipUrl: payment.bankSlipUrl,
+      invoiceUrl: payment.invoiceUrl,
+      invoiceNumber: payment.invoiceNumber,
+      message:
+        "Pague o boleto pelo link ou código de barras. O saldo será creditado após a confirmação do pagamento.",
+    };
+  }
+
+  /**
+   * Solicita depósito via Cartão de Crédito (Asaas). Retorna URL para redirecionar o usuário.
+   * O crédito na carteira é feito via webhook quando o pagamento for confirmado.
+   */
+  async requestDepositCreditCard(
+    userId: string,
+    amount: number,
+    description?: string,
+  ): Promise<{
+    paymentId: string;
+    value: number;
+    dueDate: string;
+    invoiceUrl?: string;
+    message: string;
+  }> {
+    this.ensureAsaasDepositConfig();
+    this.validateDepositAmount(amount);
+
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 1);
+    const dueDateStr = dueDate.toISOString().slice(0, 10);
+
+    const payment = await this.asaas.createPayment({
+      customer: this.asaas.getCustomerId()!,
+      billingType: "CREDIT_CARD",
+      value: amount,
+      dueDate: dueDateStr,
+      description:
+        description ??
+        `Depósito Jogo da Sorte - Usuário ${userId.slice(0, 8)}...`,
+      externalReference: userId,
+    });
+
+    if (!payment) {
+      throw new BadRequestException(
+        "Não foi possível gerar a cobrança para cartão. Tente novamente.",
+      );
+    }
+
+    this.logger.log(
+      `Cobrança Cartão criada: payment=${payment.id}, user=${userId}, value=${amount}`,
+    );
+
+    return {
+      paymentId: payment.id,
+      value: payment.value,
+      dueDate: payment.dueDate,
+      invoiceUrl: payment.invoiceUrl,
+      message:
+        "Acesse o link para preencher os dados do cartão. O saldo será creditado após a aprovação.",
+    };
+  }
+
+  private ensureAsaasDepositConfig(): void {
+    if (!this.asaas.isEnabled()) {
+      throw new BadRequestException(
+        "Depósito temporariamente indisponível. Configure a integração Asaas.",
+      );
+    }
+    if (!this.asaas.getCustomerId()) {
+      throw new BadRequestException(
+        "Depósito não configurado (ASAAS_CUSTOMER_ID). Contate o suporte.",
+      );
+    }
+  }
+
+  private validateDepositAmount(amount: number): void {
+    if (amount <= 0) {
+      throw new BadRequestException("Valor do depósito deve ser positivo.");
+    }
+    const minDeposit = 5;
+    if (amount < minDeposit) {
+      throw new BadRequestException(
+        `Valor mínimo para depósito é R$ ${minDeposit.toFixed(2)}`,
+      );
+    }
   }
 
   /**
@@ -521,7 +638,7 @@ export class WalletsService {
       return { wallet: updatedWallet, transaction };
     });
 
-    // Se integração Asaas ativa e saque via PIX com chave, dispara transferência PIX
+    // Se integração Asaas ativa e saque via PIX com chave, dispara transferência PIX e grava ID no banco
     if (
       this.asaas.isEnabled() &&
       (withdrawDto.method === PaymentMethod.PIX || !withdrawDto.method) &&
@@ -529,7 +646,7 @@ export class WalletsService {
     ) {
       try {
         const keyType = this.inferPixKeyType(withdrawDto.pixKey);
-        await this.asaas.transferToPix({
+        const transfer = await this.asaas.transferToPix({
           value: withdrawDto.amount,
           pixAddressKey: withdrawDto.pixKey,
           pixAddressKeyType: keyType,
@@ -537,8 +654,18 @@ export class WalletsService {
             withdrawDto.description ??
             `Saque Jogo da Sorte - ${userId.slice(0, 8)}`,
         });
+        if (transfer?.id) {
+          await this.prisma.transaction.update({
+            where: { id: result.transaction.id },
+            data: {
+              externalId: transfer.id,
+              externalStatus: transfer.status ?? undefined,
+              gatewayResponse: transfer as object,
+            },
+          });
+        }
         this.logger.log(
-          `Transferência PIX Asaas disparada para usuário ${userId}, valor R$ ${withdrawDto.amount.toFixed(2)}`,
+          `Transferência PIX Asaas disparada para usuário ${userId}, valor R$ ${withdrawDto.amount.toFixed(2)}, transferId=${transfer?.id ?? "N/A"}`,
         );
       } catch (err) {
         this.logger.error(
@@ -655,10 +782,106 @@ export class WalletsService {
   }
 
   /**
-   * Consulta saldo disponível
+   * Trilha financeira completa de um usuário para auditoria.
+   * Consolida carteira, transações, apostas, prêmios e saques em um único payload.
+   */
+  async getUserFinancialTrail(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        status: true,
+        kycStatus: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Usuário ${userId} não encontrado`);
+    }
+
+    const wallet = await this.prisma.wallet.findFirst({
+      where: { userId, deletedAt: null },
+      select: {
+        id: true,
+        balance: true,
+        blockedBalance: true,
+        totalDeposited: true,
+        totalWithdrawn: true,
+        totalWon: true,
+        totalLost: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    const transactions = await this.prisma.transaction.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      include: {
+        bet: {
+          include: {
+            draw: {
+              select: {
+                id: true,
+                category: true,
+                scheduledAt: true,
+                status: true,
+              },
+            },
+            settlement: {
+              include: {
+                draw: {
+                  select: {
+                    id: true,
+                    category: true,
+                    scheduledAt: true,
+                    status: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const totalsByType: Record<string, number> = {};
+    let theoreticalBalance = 0;
+
+    for (const tx of transactions) {
+      // Importante: os valores de amount já vêm com sinal semântico:
+      // depósitos/prêmios/bônus/reembolsos positivos, apostas/saques negativos.
+      // Portanto, o saldo teórico é simplesmente a soma dos amounts.
+      theoreticalBalance += tx.amount;
+      totalsByType[tx.type] = (totalsByType[tx.type] ?? 0) + tx.amount;
+    }
+
+    const walletBalance = wallet?.balance ?? 0;
+
+    return {
+      user,
+      wallet,
+      totals: {
+        byType: totalsByType,
+        theoreticalBalance,
+        walletBalance,
+        diff: walletBalance - theoreticalBalance,
+      },
+      transactions,
+    };
+  }
+
+  /**
+   * Consulta saldo disponível.
+   * Cria a carteira automaticamente se o usuário ainda não tiver uma.
    */
   async getBalance(userId: string) {
-    const wallet = await this.findByUserId(userId);
+    const wallet = await this.findOrCreateByUserId(userId);
+
 
     return {
       balance: wallet.balance,

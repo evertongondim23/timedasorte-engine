@@ -67,6 +67,7 @@ npx tsx prisma/seed-teams.ts
 ```
 
 **Saída esperada:**
+
 ```
 🎲 Iniciando seed dos times...
   ✅ Time "Avestruz" criado com sucesso!
@@ -109,13 +110,13 @@ Acesse: http://localhost:5555
 
 ```bash
 # Listar times (após servidor iniciado)
-curl http://localhost:3000/api/teams
+curl http://localhost:3020/api/teams
 
 # Buscar time por ID
-curl http://localhost:3000/api/teams/{id}
+curl http://localhost:3020/api/teams/{id}
 
 # Buscar por camisa
-curl http://localhost:3000/api/teams/jersey/10
+curl http://localhost:3020/api/teams/jersey/10
 ```
 
 ---
@@ -164,6 +165,7 @@ npx tsx prisma/seed-admin.ts
 ```
 
 **Dados:**
+
 - Email: admin@jogodasorte.com
 - Senha: Admin@123
 - Role: SYSTEM_ADMIN
@@ -176,6 +178,7 @@ npx tsx prisma/seed-sample-data.ts
 ```
 
 Inclui:
+
 - 10 usuários de teste
 - 50 apostas fictícias
 - 5 sorteios passados
@@ -286,10 +289,12 @@ npm install -D tsx
 ⚠️ **IMPORTANTE:** Nunca execute seeds com dados de teste em produção!
 
 ### Seeds seguros para produção:
+
 - ✅ Teams seed
 - ✅ Admin user seed (com senha forte)
 
 ### Seeds APENAS para desenvolvimento:
+
 - ❌ Sample data seed
 - ❌ Test users seed
 
@@ -308,6 +313,7 @@ npm install -D tsx
 ```
 
 Uso:
+
 ```bash
 npm run seed:teams
 npm run seed:all
@@ -315,6 +321,6 @@ npm run seed:all
 
 ---
 
-**Última atualização:** 6 de janeiro de 2026
+**Última atualização:** 6 de janeiro de 2026  
 **Status:** 🟢 Teams seed disponível
 

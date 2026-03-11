@@ -81,7 +81,7 @@ export class WalletsController {
   }
 
   /**
-   * Solicitar depósito via PIX (gera cobrança Asaas e retorna QR Code)
+   * Solicitar depósito (PIX, Boleto ou Cartão). Gera cobrança Asaas e retorna dados para pagamento.
    */
   @Post("me/deposit-request")
   @HttpCode(HttpStatus.OK)
@@ -89,7 +89,21 @@ export class WalletsController {
     @CurrentUser() user: UserPayload,
     @Body() dto: RequestDepositDto,
   ) {
-    console.log("requestDepositPix", user.id, dto.amount, dto.description);
+    const method = dto.method ?? "pix";
+    if (method === "boleto") {
+      return this.walletsService.requestDepositBoleto(
+        user.id,
+        dto.amount,
+        dto.description,
+      );
+    }
+    if (method === "credit_card") {
+      return this.walletsService.requestDepositCreditCard(
+        user.id,
+        dto.amount,
+        dto.description,
+      );
+    }
     return this.walletsService.requestDepositPix(
       user.id,
       dto.amount,
@@ -98,10 +112,13 @@ export class WalletsController {
   }
 
   /**
-   * Depositar na minha carteira (crédito direto; usado por webhook/admin)
+   * Depositar na minha carteira (crédito direto).
+   * Restrito a admin: créditos reais vêm apenas via webhook Asaas (POST /asaas/webhooks/payments).
+   * Evita injeção de saldo por usuário autenticado.
    */
   @Post("me/deposit")
   @HttpCode(HttpStatus.OK)
+  @RequiredRoles(Roles.ADMIN, Roles.SYSTEM_ADMIN)
   async deposit(
     @CurrentUser() user: UserPayload,
     @Body() depositDto: DepositDto,
@@ -119,6 +136,16 @@ export class WalletsController {
     @Body() withdrawDto: WithdrawDto,
   ) {
     return this.walletsService.withdraw(user.id, withdrawDto);
+  }
+
+  /**
+   * Trilha financeira completa de um usuário (admin).
+   * Consolida depósitos, apostas, prêmios e saques em um único payload para auditoria.
+   */
+  @Get("admin/:userId/trail")
+  @RequiredRoles(Roles.ADMIN, Roles.SYSTEM_ADMIN)
+  async getUserFinancialTrailAdmin(@Param("userId") userId: string) {
+    return this.walletsService.getUserFinancialTrail(userId);
   }
 
   /**

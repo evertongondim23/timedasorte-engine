@@ -9,9 +9,9 @@ if [ ! -f "docker/docker-compose.minio.yml" ]; then
 fi
 
 # Criar rede se não existir
-if ! docker network ls | grep -q "app-net"; then
-    echo "📡 Criando rede app-net..."
-    docker network create --driver bridge app-net
+if ! docker network ls | grep -q "app-net-time-da-sorte"; then
+    echo "📡 Criando rede app-net-time-da-sorte..."
+    docker network create --driver bridge app-net-time-da-sorte
 fi
 
 # Parar containers existentes
@@ -32,8 +32,8 @@ docker compose -f docker/docker-compose.minio.yml --env-file .env ps
 
 echo ""
 echo "✅ MinIO iniciado!"
-echo "📁 API disponível em: http://localhost:9000"
-echo "🖥️ Console web disponível em: http://localhost:9001"
+echo "📁 API disponível em: http://localhost:3300"
+echo "🖥️ Console web disponível em: http://localhost:3301"
 echo "👤 Usuário: admin"
 echo "🔑 Senha: password123"
 echo ""
@@ -45,5 +45,5 @@ echo ""
 echo "🔧 Configuração no .env:"
 echo "  MINIO_ROOT_USER=admin"
 echo "  MINIO_ROOT_PASSWORD=password123"
-echo "  MINIO_ENDPOINT=http://localhost:9000"
+echo "  MINIO_ENDPOINT=http://localhost:3300"
 echo "  MINIO_USE_SSL=false"
