@@ -241,6 +241,48 @@ export class RoundsService {
   }
 
   /**
+   * Última rodada que já tem resultado (publicado ou milhares preenchidos).
+   * Ordem: o resultado que “saiu” mais recentemente primeiro — prioriza publishedAt desc
+   * (horário em que o resultado entrou no sistema); fallback scheduledAt/updatedAt para casos sem publishedAt.
+   */
+  async findLatestWithPublishedResult() {
+    const draw = await this.prisma.draw.findFirst({
+      where: {
+        deletedAt: null,
+        OR: [
+          { publishedAt: { not: null } },
+          { status: { in: [DrawStatus.PUBLISHED, DrawStatus.COMPLETED] } },
+          { milhares: { isEmpty: false } },
+        ],
+      },
+      orderBy: [
+        { publishedAt: { sort: "desc", nulls: "last" } },
+        { updatedAt: "desc" },
+        { scheduledAt: "desc" },
+      ],
+      include: {
+        _count: {
+          select: {
+            bets: true,
+          },
+        },
+      },
+    });
+
+    if (!draw) {
+      return null;
+    }
+
+    return {
+      ...draw,
+      canPlaceBet: this.gameConfig.canPlaceBet(draw.cutoffAt),
+      minutesToCutoff: Math.floor(
+        (draw.cutoffAt.getTime() - Date.now()) / 60000,
+      ),
+    };
+  }
+
+  /**
    * Publica o resultado de uma rodada
    *
    * Esta é a operação crítica que:

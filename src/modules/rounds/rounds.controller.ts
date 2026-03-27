@@ -85,6 +85,19 @@ export class RoundsController {
   }
 
   /**
+   * Última rodada com resultado (não depende da paginação de GET /rounds).
+   */
+  @Get('latest-published')
+  @ApiOperation({
+    summary: 'Última rodada com resultado publicado',
+    description:
+      'Retorna a rodada cujo resultado saiu mais recentemente (ordenado por publishedAt desc, depois updatedAt/scheduledAt). Resposta null se não houver.',
+  })
+  async getLatestPublished() {
+    return await this.roundsService.findLatestWithPublishedResult();
+  }
+
+  /**
    * GET /api/rounds/:id
    * 
    * Detalhes de uma rodada específica

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { RoundCategory, DrawStatus, ResultSource } from '@prisma/client';
 import { GameConfigService } from '../game/game-config.service';
@@ -26,6 +26,8 @@ interface RoundSchedule {
 
 @Injectable()
 export class RoundScheduleService {
+  private readonly logger = new Logger(RoundScheduleService.name);
+
   // Grade fixa de horários (ajustável)
   private readonly schedule: RoundSchedule[] = [
     { category: RoundCategory.PTM, hour: 11, minute: 0 },
@@ -203,6 +205,26 @@ export class RoundScheduleService {
       },
       orderBy: { scheduledAt: 'asc' },
     });
+
+    const summary = {
+      now: now.toISOString(),
+      available: available
+        ? { id: available.id, category: available.category, status: available.status }
+        : null,
+      nextClosed: nextClosed
+        ? { id: nextClosed.id, category: nextClosed.category, status: nextClosed.status }
+        : null,
+      nextScheduled: nextScheduled
+        ? {
+            id: nextScheduled.id,
+            category: nextScheduled.category,
+            status: nextScheduled.status,
+          }
+        : null,
+    };
+    this.logger.log(
+      `[GET /rounds/available] ${JSON.stringify(summary)} — se os três forem null, o front mostra "Nenhuma rodada disponível". (nextClosed exige scheduledAt >= now; sorteios já passados não entram.)`,
+    );
 
     return {
       available: available
