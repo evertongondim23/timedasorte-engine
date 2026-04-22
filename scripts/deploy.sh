@@ -1,254 +1,102 @@
 #!/bin/bash
+set -euo pipefail
 
-# Script principal de deploy do Jogo da Sorte
-# Uso: ./scripts/deploy.sh [comando]
+# Fluxo: variáveis no .env da raiz (ver .env.example).
 
-# Cores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+ENV_FILE="${ENV_FILE:-.env}"
+if [ -f "${ENV_FILE}" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "${ENV_FILE}"
+  set +a
+fi
 
-# Função para exibir ajuda
 show_help() {
-    echo -e "${BLUE}🚀 Script Principal de Deploy - Jogo da Sorte${NC}"
-    echo ""
-    echo "Uso: $0 [comando]"
-    echo ""
-    echo "Comandos disponíveis:"
-    echo "  network     - Gerenciar rede app-net-time-da-sorte"
-    echo "  infra       - Deploy da infraestrutura (Nginx)"
-    echo "  backend     - Deploy do backend apenas"
-    echo "  unified     - Deploy completo unificado"
-    echo "  database    - Iniciar apenas database"
-    echo "  monitoring  - Iniciar monitoramento"
-    echo "  minio       - Iniciar apenas MinIO"
-    echo "  status      - Verificar status dos serviços"
-    echo "  logs        - Ver logs dos serviços"
-    echo "  stop        - Parar todos os serviços"
-    echo "  cleanup     - Limpar recursos não utilizados"
-    echo "  help        - Exibir esta ajuda"
-    echo ""
-    echo "Exemplos:"
-    echo "  $0 network create"
-    echo "  $0 infra"
-    echo "  $0 unified"
-    echo "  $0 status"
+  local example_project="${VPS_APP_PROJECT_NAME:-<VPS_APP_PROJECT_NAME>}"
+  local example_host="${APP_HOST:-<APP_HOST>}"
+  local example_service="${VPS_DEFAULT_SERVICE:-backend}"
+
+  echo "Deploy (docker/ + scripts/vps/)"
+  echo ""
+  echo "Uso: ./scripts/deploy.sh [comando]"
+  echo ""
+  echo "Comandos:"
+  echo "  vps-gateway  - Traefik compartilhado (portas em TRAEFIK_PUBLISH_*)"
+  echo "  vps-app      - Backend com labels Traefik (compose vps-app)"
+  echo "  vps-backend  - Só o serviço backend"
+  echo "  vps-service  - Um serviço do compose vps-app (ex.: backend)"
+  echo "  database     - Postgres + Redis + MinIO (compose database)"
+  echo "  minio        - Só MinIO (via start-database.sh minio)"
+  echo "  help"
+  echo ""
+  echo "Exemplos:"
+  echo "  ./scripts/deploy.sh vps-gateway"
+  echo "  ./scripts/deploy.sh vps-app"
+  echo "  VPS_APP_PROJECT_NAME=${example_project} APP_HOST=${example_host} ./scripts/deploy.sh vps-app"
+  echo "  APP_HOST=${example_host} ./scripts/deploy.sh vps-backend"
+  echo "  ./scripts/deploy.sh vps-service ${example_service}"
+  echo "  ./scripts/deploy.sh database"
 }
 
-# Função para verificar se está no diretório correto
 check_directory() {
-    if [ ! -f "docker/docker-compose.yml" ]; then
-        echo -e "${RED}❌ Erro: Execute este script no diretório do projeto${NC}"
-        exit 1
-    fi
+  if [ ! -f "traefik/docker-compose.vps-gateway.yml" ] || [ ! -f "docker/docker-compose.vps-app.yml" ]; then
+    echo "Erro: execute na raiz do repositório (pasta que contém docker/)."
+    exit 1
+  fi
 }
 
-# Função para gerenciar rede
-manage_network() {
-    ./scripts/network-manager.sh "$1"
+deploy_vps_gateway() {
+  ./scripts/vps/deploy-gateway.sh
 }
 
-# Função para deploy de infraestrutura
-deploy_infra() {
-    echo -e "${BLUE}🏗️ Deploy Infraestrutura - Jogo da Sorte${NC}"
-    ./scripts/deploy-infrastructure.sh
+deploy_vps_app() {
+  ./scripts/vps/deploy-app.sh
 }
 
-# Função para deploy do backend
-deploy_backend() {
-    echo -e "${BLUE}🚀 Deploy Backend - Jogo da Sorte${NC}"
-    ./scripts/deploy-backend-only.sh
+deploy_vps_backend() {
+  ./scripts/vps/deploy-backend.sh
 }
 
-# Função para deploy unificado
-deploy_unified() {
-    echo -e "${BLUE}🚀 Deploy Unificado - Jogo da Sorte${NC}"
-    ./scripts/deploy-unified.sh
+deploy_vps_service() {
+  ./scripts/vps/deploy-service.sh "${2:-}"
 }
 
-# Função para iniciar database
 start_database() {
-    echo -e "${BLUE}🗄️ Iniciando Database - Jogo da Sorte${NC}"
-    
-    # Criar rede se não existir
-    if ! docker network ls | grep -q "app-net-time-da-sorte"; then
-        echo "📡 Criando rede app-net-time-da-sorte..."
-        docker network create --driver bridge app-net-time-da-sorte
-    fi
-    
-    docker compose -f docker/docker-compose.database.yml up -d
-    echo "✅ Database iniciado!"
+  ./scripts/start-database.sh
 }
 
-# Função para iniciar monitoramento
-start_monitoring() {
-    echo -e "${BLUE}📊 Iniciando Monitoramento - Jogo da Sorte${NC}"
-    
-    # Criar rede se não existir
-    if ! docker network ls | grep -q "app-net-time-da-sorte"; then
-        echo "📡 Criando rede app-net-time-da-sorte..."
-        docker network create --driver bridge app-net-time-da-sorte
-    fi
-    
-    docker compose -f docker/docker-compose.monitoring.yml up -d
-    echo "✅ Monitoramento iniciado!"
+start_minio_only() {
+  ./scripts/start-database.sh minio
 }
 
-# Função para iniciar MinIO
-start_minio() {
-    echo -e "${BLUE}📁 Iniciando MinIO - Jogo da Sorte${NC}"
-    
-    # Criar rede se não existir
-    if ! docker network ls | grep -q "app-net-time-da-sorte"; then
-        echo "📡 Criando rede app-net-time-da-sorte..."
-        docker network create --driver bridge app-net-time-da-sorte
-    fi
-    
-    docker compose -f docker/docker-compose.minio.yml up -d
-    echo "✅ MinIO iniciado!"
-}
-
-# Função para verificar status
-check_status() {
-    echo -e "${BLUE}📊 Status dos Serviços - Jogo da Sorte${NC}"
-    echo ""
-    
-    # Status da rede
-    echo "🔗 Status da rede:"
-    ./scripts/network-manager.sh status
-    echo ""
-    
-    # Status dos containers
-    echo "🐳 Status dos containers:"
-    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep jogodasorte
-}
-
-# Função para ver logs
-show_logs() {
-    echo -e "${BLUE}📋 Logs dos Serviços - Jogo da Sorte${NC}"
-    echo ""
-    echo "Escolha o serviço para ver logs:"
-    echo "  1. Backend"
-    echo "  2. Database"
-    echo "  3. Redis"
-    echo "  4. MinIO"
-    echo "  5. Nginx"
-    echo "  6. Prometheus"
-    echo "  7. Grafana"
-    echo "  8. Todos"
-    echo ""
-    read -p "Digite o número (1-8): " choice
-    
-    case $choice in
-        1)
-            docker compose -f docker/docker-compose.prod.yml logs -f backend
-            ;;
-        2)
-            docker compose -f docker/docker-compose.database.yml logs -f db
-            ;;
-        3)
-            docker compose -f docker/docker-compose.database.yml logs -f redis
-            ;;
-        4)
-            docker compose -f docker/docker-compose.unified.yml logs -f minio
-            ;;
-        5)
-            docker compose -f docker/docker-compose.infrastructure.yml logs -f nginx
-            ;;
-        6)
-            docker compose -f docker/docker-compose.monitoring.yml logs -f prometheus
-            ;;
-        7)
-            docker compose -f docker/docker-compose.monitoring.yml logs -f grafana
-            ;;
-        8)
-            docker compose -f docker/docker-compose.unified.yml logs -f
-            ;;
-        *)
-            echo "Opção inválida"
-            ;;
-    esac
-}
-
-# Função para parar todos os serviços
-stop_all() {
-    echo -e "${BLUE}🛑 Parando todos os serviços - Jogo da Sorte${NC}"
-    
-    docker compose -f docker/docker-compose.unified.yml down
-    docker compose -f docker/docker-compose.prod.yml down
-    docker compose -f docker/docker-compose.backend.yml down
-    docker compose -f docker/docker-compose.database.yml down
-    docker compose -f docker/docker-compose.infrastructure.yml down
-    docker compose -f docker/docker-compose.monitoring.yml down
-    
-    echo "✅ Todos os serviços parados!"
-}
-
-# Função para limpeza
-cleanup() {
-    echo -e "${BLUE}🧹 Limpeza de recursos - Jogo da Sorte${NC}"
-    
-    # Parar containers órfãos
-    docker compose -f docker/docker-compose.unified.yml down --remove-orphans
-    docker compose -f docker/docker-compose.prod.yml down --remove-orphans
-    docker compose -f docker/docker-compose.backend.yml down --remove-orphans
-    docker compose -f docker/docker-compose.database.yml down --remove-orphans
-    docker compose -f docker/docker-compose.infrastructure.yml down --remove-orphans
-    docker compose -f docker/docker-compose.monitoring.yml down --remove-orphans
-    
-    # Limpar recursos não utilizados
-    docker system prune -f
-    
-    echo "✅ Limpeza concluída!"
-}
-
-# Verificar se está no diretório correto
 check_directory
 
-# Processar argumentos
 case "${1:-help}" in
-    network)
-        manage_network "$2"
-        ;;
-    infra)
-        deploy_infra
-        ;;
-    backend)
-        deploy_backend
-        ;;
-    unified)
-        deploy_unified
-        ;;
-    database)
-        start_database
-        ;;
-    monitoring)
-        start_monitoring
-        ;;
-    minio)
-        start_minio
-        ;;
-    status)
-        check_status
-        ;;
-    logs)
-        show_logs
-        ;;
-    stop)
-        stop_all
-        ;;
-    cleanup)
-        cleanup
-        ;;
-    help|--help|-h)
-        show_help
-        ;;
-    *)
-        echo -e "${RED}❌ Comando inválido: $1${NC}"
-        echo ""
-        show_help
-        exit 1
-        ;;
+  vps-gateway)
+    deploy_vps_gateway
+    ;;
+  vps-app)
+    deploy_vps_app
+    ;;
+  vps-backend)
+    deploy_vps_backend
+    ;;
+  vps-service)
+    deploy_vps_service "$@"
+    ;;
+  database)
+    start_database
+    ;;
+  minio)
+    start_minio_only
+    ;;
+  help|--help|-h)
+    show_help
+    ;;
+  *)
+    echo "Comando inválido: ${1:-}"
+    echo ""
+    show_help
+    exit 1
+    ;;
 esac

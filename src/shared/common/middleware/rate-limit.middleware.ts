@@ -30,6 +30,15 @@ export class RateLimitMiddleware implements NestMiddleware {
   }
 
   use(req: Request, res: Response, next: NextFunction) {
+    // Preflight CORS não deve contar no limite; 429 vem sem Access-Control-Allow-*
+    if (req.method === 'OPTIONS') {
+      return next();
+    }
+    const path = req.path || req.url?.split('?')[0] || '';
+    if (path === '/health' || path === '/metrics') {
+      return next();
+    }
+
     const key = this.getClientKey(req);
     const now = Date.now();
 

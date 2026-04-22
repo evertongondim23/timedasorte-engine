@@ -1,23 +1,23 @@
 /**
  * Script de Teste - Service Bus Endpoints
- * 
+ *
  * Este script testa os endpoints do Service Bus no backend NestJS
  */
 
-const BASE_URL = 'http://localhost:3100'; // Ajuste conforme sua porta
+const BASE_URL = 'http://localhost:30100'; // departamento-estadual-rodovias
 
 /**
  * Testa a conectividade com o Service Bus
  */
 async function testarConectividade() {
   console.log('🔍 Testando conectividade...');
-  
+
   try {
     const response = await fetch(`${BASE_URL}/service-bus/test`);
     const data = await response.json();
-    
+
     console.log('📋 Resposta:', data);
-    
+
     if (data.success) {
       console.log('✅ Conectividade OK');
       return true;
@@ -36,7 +36,7 @@ async function testarConectividade() {
  */
 async function enviarDadosTeste() {
   console.log('📤 Enviando dados de teste...');
-  
+
   try {
     const response = await fetch(`${BASE_URL}/service-bus/test`, {
       method: 'POST',
@@ -44,10 +44,10 @@ async function enviarDadosTeste() {
         'Content-Type': 'application/json',
       },
     });
-    
+
     const data = await response.json();
     console.log('📋 Resposta:', data);
-    
+
     if (data.success) {
       console.log('✅ Dados de teste enviados com sucesso');
       return true;
@@ -66,7 +66,7 @@ async function enviarDadosTeste() {
  */
 async function enviarTagEspecifica() {
   console.log('📤 Enviando tag específica...');
-  
+
   const dadosTag = {
     tagId: 'TAG_ESPECIFICA_001',
     timestamp: new Date().toISOString(),
@@ -84,7 +84,7 @@ async function enviarTagEspecifica() {
       prioridade: 'alta',
     },
   };
-  
+
   try {
     const response = await fetch(`${BASE_URL}/service-bus/enviar-tag`, {
       method: 'POST',
@@ -93,10 +93,10 @@ async function enviarTagEspecifica() {
       },
       body: JSON.stringify(dadosTag),
     });
-    
+
     const data = await response.json();
     console.log('📋 Resposta:', data);
-    
+
     if (data.success) {
       console.log('✅ Tag enviada com sucesso');
       return true;
@@ -115,7 +115,7 @@ async function enviarTagEspecifica() {
  */
 async function enviarMultiplasTags() {
   console.log('📤 Enviando múltiplas tags...');
-  
+
   const dadosTags = {
     tags: [
       {
@@ -125,29 +125,32 @@ async function enviarMultiplasTags() {
       },
       {
         tagId: 'TAG_MULTI_002',
-        location: { latitude: -23.5510, longitude: -46.6340 },
+        location: { latitude: -23.551, longitude: -46.634 },
         sensorData: { temperature: 26.0, humidity: 58.0, batteryLevel: 75 },
       },
       {
         tagId: 'TAG_MULTI_003',
-        location: { latitude: -23.5490, longitude: -46.6320 },
+        location: { latitude: -23.549, longitude: -46.632 },
         sensorData: { temperature: 24.5, humidity: 62.0, batteryLevel: 95 },
       },
     ],
   };
-  
+
   try {
-    const response = await fetch(`${BASE_URL}/service-bus/enviar-multiplas-tags`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      `${BASE_URL}/service-bus/enviar-multiplas-tags`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dadosTags),
       },
-      body: JSON.stringify(dadosTags),
-    });
-    
+    );
+
     const data = await response.json();
     console.log('📋 Resposta:', data);
-    
+
     if (data.success) {
       console.log('✅ Todas as tags foram enviadas com sucesso');
       return true;
@@ -168,30 +171,32 @@ async function executarTestes() {
   console.log('🚀 Iniciando testes do Service Bus');
   console.log('📍 URL Base:', BASE_URL);
   console.log('---');
-  
+
   // Teste 1: Conectividade
   const conectividadeOk = await testarConectividade();
-  
+
   if (!conectividadeOk) {
-    console.log('❌ Teste de conectividade falhou. Verifique se o servidor está rodando.');
+    console.log(
+      '❌ Teste de conectividade falhou. Verifique se o servidor está rodando.',
+    );
     return;
   }
-  
+
   console.log('---');
-  
+
   // Teste 2: Dados de teste
   await enviarDadosTeste();
-  
+
   console.log('---');
-  
+
   // Teste 3: Tag específica
   await enviarTagEspecifica();
-  
+
   console.log('---');
-  
+
   // Teste 4: Múltiplas tags
   await enviarMultiplasTags();
-  
+
   console.log('---');
   console.log('🎉 Testes concluídos!');
 }
